@@ -71,13 +71,7 @@ This project is part of Shoe Bank’s journey to expand into **nationwide online
 
 ---
 
-## 🧱 Project Structure
 
-ShoeBank/
-├── client/ # React Frontend
-├── server/ # Express Backend
-├── .env.example
-└── README.md
 
 
 ---
