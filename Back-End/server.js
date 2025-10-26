@@ -6,6 +6,8 @@ require('dotenv').config();
 const globalErrorHandler = require('./Controller/errorController');
 const AppError = require('./utils/appError');
 
+const authRoutes = require('./routes/auth-routes');
+
 
 const app = express();
 
@@ -24,6 +26,7 @@ app.use(
 );
 
 app.use(express.json({ limit: "10kb" }));
+app.use('/api/auth', authRoutes);
 
 
 app.use(globalErrorHandler);
