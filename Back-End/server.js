@@ -1,21 +1,39 @@
-const express = require("express")
-require("dotenv").config()
-const cors = require("cors")
-const cookieParser = require("cookie-parser")
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+require('dotenv').config();
+
+const globalErrorHandler = require('./Controller/errorController');
+const AppError = require('./utils/appError');
+
 
 const app = express();
 
-app.use(express.json())
-app.use(cors())
-app.use(cookieParser({credentials : true}))
+app.use(cookieParser());
 
-app.get("/",(req,res)=>{
-    res.json({
-        "message" : "this is a testing msg"
+app.use(
+    cors({
+        origin: ["http://localhost:5173"],
+        methods : ["GET","POST","DELETE","PUT"],
+        allowedHeaders : [
+            "Content-Type",
+            "Authorization",
+        ],
+        credentials: true,
     })
-})
+);
+
+app.use(express.json({ limit: "10kb" }));
 
 
-app.listen(process.env.PORT,()=>{
-    console.log(`Server running at port ${process.env.PORT}`);  
-})
+app.use(globalErrorHandler);
+
+const PORT = process.env.PORT || 3000;
+
+const connectToDB = require('./Data-Base/db');
+
+connectToDB();
+
+app.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
+});
