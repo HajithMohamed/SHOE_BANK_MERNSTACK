@@ -150,6 +150,67 @@ const otpVerify = catchAsync(async(req,res,next)=>{
     createSendToken(user, 200, res, "Email has been verified.");
 })
 
+const resendOTP = catchAsync(async (req, res, next) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return next(new AppError("Email is required to resend OTP", 400));
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        return next(new AppError('User not found', 404));
+    }
+
+    if (user.isVerified) {
+        return next(new AppError("This account is already verified", 400));
+    }
+
+    const newOTP = generateOtp();
+    user.otp = newOTP;
+    user.otpExpires = Date.now() + 24 * 60 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "Resend OTP - Verify Your Email for Shoe Bank",
+            html: `
+                <h1>Email Verification - New OTP</h1>
+                <p>Hi ${user.userName},</p>
+        
+                <p>We received a request to resend your OTP for verifying your email address at <strong>Shoe Bank 👟✨</strong>.</p>
+        
+                <p>Your new OTP is:</p>
+        
+                <h2 style="color: #2e6da4;">${newOTP}</h2>
+        
+                <p><strong>Note:</strong> This OTP is valid for the next 24 hours. Please do not share it with anyone.</p>
+        
+                <p>If you didn’t request this OTP, you can safely ignore this email.</p>
+        
+                <br/>
+                <p>Best regards,</p>
+                <p><strong>The Shoe Bank Team</strong></p>
+            `
+        });
+        
+
+        res.status(200).json({
+            status: "success",
+            message: "OTP sent successfully."
+        });
+    } catch (error) {
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        return next(new AppError("Error sending email, please try again."));
+    }
+});
+
 const login = catchAsync(async(req,res,next)=>{
     const {email,pass}=req.body;
     if(!email||!pass){
