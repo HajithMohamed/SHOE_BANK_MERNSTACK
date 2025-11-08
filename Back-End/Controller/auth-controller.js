@@ -150,5 +150,17 @@ const otpVerify = catchAsync(async(req,res,next)=>{
     createSendToken(user, 200, res, "Email has been verified.");
 })
 
+const login = catchAsync(async(req,res,next)=>{
+    const {email,pass}=req.body;
+    if(!email||!pass){
+        return next(new AppError("Please provide email and password", 400));
+    }
 
+    const user = await User.findOne({email}).select("+password")
+
+    if(!user || !await(user.correctPassword(pass,user.password))){
+        return next(new AppError('Incorrect email or password', 401));
+    }
+    createSendToken(user, 200, res, "Login successful");
+})
 module.exports = { registerUser };
