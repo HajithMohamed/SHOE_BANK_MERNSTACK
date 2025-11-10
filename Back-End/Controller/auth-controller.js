@@ -9,104 +9,80 @@ const bcrypt = require('bcrypt');
 
 
 const signToken = (id) => {
-    return JWT.sign({ id }, process.env.JWT_SECRET, {
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN,
     });
 };
 
-const createSendToken = catchAsync(async(req,res,next)=>{
-    const token = signToken(user._id)
+const createSendToken = (user, statusCode, res, message) => {
+  const token = signToken(user._id);
 
-    const cookieOption = {
-        expires : new Date(
-            Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
-        ),
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "Lax"
-    };
-    res.cookie("token", token, cookieOption);
-    User.password = undefined;
-    User.passwordConfirm = undefined;
-    User.otp = undefined;
+  const cookieOption = {
+    expires: new Date(
+      Date.now() + (process.env.JWT_COOKIE_EXPIRES_IN || 7) * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "Lax",
+  };
 
-    res.status(statusCode).json({
-        status: "success",
-        message,
-        token,
-        data: {
-            User,
-        }
-    });
-})
+  res.cookie("token", token, cookieOption);
+
+  // remove sensitive data
+  user.password = undefined;
+  user.passwordConfirm = undefined;
+  user.otp = undefined;
+
+  res.status(statusCode).json({
+    status: "success",
+    message,
+    token,
+    data: { user },
+  });
+};
+
 const registerUser = catchAsync(async (req, res, next) => {
     const { email, password, confirm_pass } = req.body;
 
-    // 🔹 1. Validate required fields
-    if (!email) {
-        return next(new AppError("Email is required", 400));
-    }
-    if (!password || !confirm_pass) {
+    // 🔹 Validate required fields
+    if (!email) return next(new AppError("Email is required", 400));
+    if (!password || !confirm_pass)
         return next(new AppError("Password and confirmation are required", 400));
-    }
-    if (password !== confirm_pass) {
+    if (password !== confirm_pass)
         return next(new AppError("Passwords do not match", 400));
-    }
 
-    // 🔹 2. Check for existing user
+    // 🔹 Check for existing user
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser)
         return next(new AppError("Provided email already exists, try a different one", 400));
-    }
 
-    // 🔹 3. Generate OTP and hash password
+    // 🔹 Generate OTP
     const otp = generateOtp();
     const otpExpire = Date.now() + 24 * 60 * 60 * 1000; // valid for 24 hours
-    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 🔹 4. Create user document
+    // 🔹 Create user document without hashing
     const newUser = new User({
         email,
-        password: hashedPassword, // ✅ should match your User schema field
+        password, // store plain text directly
         otp,
-        otpExpire,
-        isVerified: false // optional but recommended
+        otpExpires: otpExpire,
+        isVerified: false,
     });
 
-    // 🔹 5. Save and send email
-    try {
-        const savedUser = await newUser.save();
+    const savedUser = await newUser.save();
 
-        await sendEmail({
-            email: savedUser.email,
-            subject: "Email Verification - Your OTP Code",
-            html: `
-                <div style="font-family: Arial, sans-serif; color: #333;">
-                    <h2>Hello ${savedUser.userName || 'User'},</h2>
-                    <p>Thank you for registering with us!</p>
-                    <p><strong>Your One-Time Password (OTP) for email verification is:</strong></p>
-                    <h1 style="color: #007BFF;">${otp}</h1>
-                    <p>Please enter this code in the app to complete your verification.</p>
-                    <p>If you did not request this, please ignore this email.</p>
-                    <br />
-                    <p>Best regards,<br/>The Team</p>
-                </div>
-            `
-        });
+    // 🔹 Send OTP email
+    await sendEmail({
+        email: savedUser.email,
+        subject: "Email Verification - Your OTP Code",
+        html: `<h2>Hello!</h2><p>Your OTP is: <strong>${otp}</strong></p>`,
+    });
 
-        res.status(201).json({
-            status: "success",
-            message: "User registered successfully. Please verify your email.",
-            data: { userId: savedUser._id }
-        });
-
-    } catch (error) {
-        if (error.name === 'MongoServerError' && error.code === 11000) {
-            return next(new AppError("User already exists", 400));
-        }
-        console.error("Registration Error:", error);
-        return next(new AppError("Error saving user, please try again", 500));
-    }
+    res.status(201).json({
+        status: "success",
+        message: "User registered successfully. Please verify your email.",
+        data: { userId: savedUser._id },
+    });
 });
 
 
@@ -122,14 +98,15 @@ const otpVerify = catchAsync(async(req,res,next)=>{
         return next(new AppError("User not found", 400));
     }
 
-    if(user.otp.toString()!==otp.toString){
+    if(user.otp.toString()!==otp.toString()){
         return next(new AppError("Invalid OTP", 400));
     }
+
     if(Date.now() > new Date(user.otpExpires).getTime()){
         return next(new AppError("OTP expired, Please request new otp", 400));
     }
 
-     user.isVerified = true;
+    user.isVerified = true;
     user.otp = undefined;
     user.otpExpires = undefined;
 
@@ -211,19 +188,34 @@ const resendOTP = catchAsync(async (req, res, next) => {
     }
 });
 
-const login = catchAsync(async(req,res,next)=>{
-    const {email,pass}=req.body;
-    if(!email||!pass){
+const login = catchAsync(async (req, res, next) => {
+    const { email, pass } = req.body;
+
+    if (!email || !pass) {
         return next(new AppError("Please provide email and password", 400));
     }
 
-    const user = await User.findOne({email}).select("+password")
+    // 🔹 Select password because in schema select:false
+    const user = await User.findOne({ email }).select("+password");
 
-    if(!user || !await(user.correctPassword(pass,user.password))){
-        return next(new AppError('Incorrect email or password', 401));
+    if (!user) {
+        return next(new AppError("Incorrect email or password", 401));
     }
+
+    // 🔹 Use bcryptjs from the model
+    const isPasswordCorrect = await user.correctPassword(pass, user.password);
+
+    if (!isPasswordCorrect) {
+        return next(new AppError("Incorrect email or password", 401));
+    }
+
+    if (!user.isVerified) {
+        return next(new AppError("User not verified. Please verify your email first.", 401));
+    }
+
     createSendToken(user, 200, res, "Login successful");
-})
+});
+
 
 const logout = catchAsync(async (req, res, next) => {
     res.cookie("token", "loggedout", {
@@ -237,4 +229,4 @@ const logout = catchAsync(async (req, res, next) => {
         message: "Logged out successfully"
     });
 });
-module.exports = { registerUser };
+module.exports = { registerUser,otpVerify,login,logout,resendOTP};
