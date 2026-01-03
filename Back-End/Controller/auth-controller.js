@@ -4,7 +4,6 @@ const generateOtp = require("../utils/generate-otp");
 const AppError = require("../utils/appError");
 const jwt = require("jsonwebtoken");
 const User = require("../Models/Users");
-const bcrypt = require('bcrypt');
 
 
 
