@@ -33,4 +33,12 @@ const addProduct = catchAsync(async(req, res, next)=>{
     });
 })
 
-module.exports = {addProduct}
+const getAllProduct = catchAsync(async(req, res, next)=>{
+    const product = await Product.find()
+    res.status(201).json({
+        status: "success",
+        data: {product}
+    });
+})
+
+module.exports = {addProduct, getAllProduct}
