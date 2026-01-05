@@ -7,6 +7,7 @@ const globalErrorHandler = require('./Controller/errorController');
 const AppError = require('./utils/appError');
 
 const authRoutes = require('./routes/auth-routes');
+const productRoutes = require("./routes/product-routes")
 
 
 const app = express();
@@ -27,6 +28,7 @@ app.use(
 
 app.use(express.json({ limit: "10kb" }));
 app.use('/api/auth', authRoutes);
+app.use("/api/product",productRoutes);
 
 
 app.use(globalErrorHandler);
