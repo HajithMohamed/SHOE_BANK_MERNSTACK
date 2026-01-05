@@ -3,7 +3,7 @@ const appError = require("../utils/appError");
 const Product = require("../Models/Product");
 
 const addProduct = catchAsync(async(req, res, next)=>{
-    const {artNo, brand, price, category, color, stock } = req.body;
+    const {artNo, brand, price, category, color, stock,size } = req.body;
 
     const product = await Product.findOne({artNo});
 
@@ -18,7 +18,8 @@ const addProduct = catchAsync(async(req, res, next)=>{
             price,
             category,
             color,
-            stock
+            stock,
+            size
         }
     )
     await newProduct.save();

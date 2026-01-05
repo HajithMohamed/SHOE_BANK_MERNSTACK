@@ -5,7 +5,7 @@ const appError = require("../utils/appError");
 const authMiddleware = catchAsync(async (req, res, next)=>{
     const authHeader = req.headers.authorization;
 
-    if(!authHeader||!authHeader.starteWith("Bearer")){
+    if(!authHeader||!authHeader.startsWith("Bearer")){
         return next(new appError("user not authenticated. Please login first.",));
     }
 

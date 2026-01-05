@@ -22,7 +22,7 @@ const productSchema = new mongoose.Schema(
             type:String,
             required:true,
             trim:true,
-            enum:[Gents, Ladies, Kids, boys, girls]
+            enum: ["Gents", "Ladies", "Kids", "Boys", "Girls"]
         },
         color:{
             type:String,
@@ -38,9 +38,6 @@ const productSchema = new mongoose.Schema(
             type:Number,
             required:true,
             trim:true
-        },
-        productPic:{
-
         },
         createdAt: {
             type: Date,

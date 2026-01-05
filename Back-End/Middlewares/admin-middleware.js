@@ -11,10 +11,13 @@ const adminMiddleware = catchAsync(async(req, res, next)=>{
         return(next (new appError("User is not found",404)));
     }
 
-    if((!user.type)=="admin"){
-        return(new appError("this user not autherize to this action",403));
+    if((user.role)!=="admin"){
+       return next(
+            new appError("You are not authorized to perform this action", 403)
+        );
     }
 
+    console.log(user.role);
     next();
 })
 
