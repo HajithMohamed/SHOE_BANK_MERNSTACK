@@ -41,4 +41,17 @@ const getAllProduct = catchAsync(async(req, res, next)=>{
     });
 })
 
-module.exports = {addProduct, getAllProduct}
+const getProductById = catchAsync(async(req,res,next)=>{
+    const productId = req.params.id;
+
+    const product = await Product.findById(productId);
+    if(!product){
+        return(next(new appError("this product cannot be found",404)));
+    }
+    res.status(200).json({
+        status: "success",
+        data: {product}
+    });
+})
+
+module.exports = {addProduct, getAllProduct, getProductById}
