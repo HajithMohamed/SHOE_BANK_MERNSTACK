@@ -22,7 +22,10 @@ const addProduct = catchAsync(async(req, res, next)=>{
             size
         }
     )
+
     await newProduct.save();
+  
+    
 
     res.status(201).json({
         status: "success",
@@ -33,13 +36,15 @@ const addProduct = catchAsync(async(req, res, next)=>{
     });
 })
 
-const getAllProduct = catchAsync(async(req, res, next)=>{
-    const product = await Product.find()
-    res.status(201).json({
+const getAllProduct = catchAsync(async (req, res, next) => {
+    res.status(200).json({
         status: "success",
-        data: {product}
+        results: res.paginatedResults.results.length,
+        data: res.paginatedResults
     });
-})
+});
+
+
 
 const getProductById = catchAsync(async(req,res,next)=>{
     const productId = req.params.id;
@@ -114,12 +119,12 @@ const filterSearch = catchAsync(async(req, res, next)=>{
     if(minPrice||maxPrice){
         queryObj.price = {};
         if(minPrice) queryObj.price.$gte = Number(minPrice);
-        if(maxPrice) queryObj.price.$gte = Number(maxPrice);
+        if(maxPrice) queryObj.price.$lte = Number(maxPrice);
     }
     if(search){
         queryObj.$or=[
             {artNo: {$regex: search, $options: "i"}},
-            {brand: {$regex: search, $option: "i"}}
+            {brand: {$regex: search, $options: "i"}}
         ]
     }
 
