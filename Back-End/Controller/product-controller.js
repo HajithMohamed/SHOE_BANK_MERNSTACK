@@ -54,4 +54,47 @@ const getProductById = catchAsync(async(req,res,next)=>{
     });
 })
 
-module.exports = {addProduct, getAllProduct, getProductById}
+const deleteProduct = catchAsync(async(req,res,next)=>{
+    const productId = req.params.id;
+
+    const product = await Product.findByIdAndDelete(productId);
+    
+    if (!product) {
+        return(next(new appError("this product cannot be found",404)));
+    }
+    res.status(200).json({
+        status: "The product was successfully deleted",
+        data: {product}
+    });
+})
+
+const updateProduct = catchAsync(async (req, res, next) => {
+
+    const { id } = req.params;
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+        id,
+        req.body,
+        {
+            new: true,            // return updated document
+            runValidators: true   // validate schema
+        }
+    );
+
+    if (!updatedProduct) {
+        return next(
+            new AppError("Product not found", 404)
+        );
+    }
+
+    res.status(200).json({
+        status: "success",
+        message: "Product updated successfully",
+        data: {
+            product: updatedProduct
+        }
+    });
+});
+
+
+module.exports = {addProduct, getAllProduct, getProductById, deleteProduct, updateProduct}
