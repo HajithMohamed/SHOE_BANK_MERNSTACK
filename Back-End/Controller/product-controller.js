@@ -71,13 +71,12 @@ const deleteProduct = catchAsync(async(req,res,next)=>{
 const updateProduct = catchAsync(async (req, res, next) => {
 
     const { id } = req.params;
-
     const updatedProduct = await Product.findByIdAndUpdate(
         id,
         req.body,
         {
-            new: true,            // return updated document
-            runValidators: true   // validate schema
+            new: true,
+            runValidators: true   
         }
     );
 
@@ -96,5 +95,44 @@ const updateProduct = catchAsync(async (req, res, next) => {
     });
 });
 
+const filterSearch = catchAsync(async(req, res, next)=>{
+    const{size, brand, category, color, minPrice, maxPrice, search}=req.query;
 
-module.exports = {addProduct, getAllProduct, getProductById, deleteProduct, updateProduct}
+    const queryObj = {};
+    if(size){
+        queryObj.size=size;
+    }
+    if (brand) {
+        queryObj.brand=brand;
+    }
+    if(category){
+        queryObj.category=category;
+    }
+    if(color){
+        queryObj.color=color;
+    }
+    if(minPrice||maxPrice){
+        queryObj.price = {};
+        if(minPrice) queryObj.price.$gte = Number(minPrice);
+        if(maxPrice) queryObj.price.$gte = Number(maxPrice);
+    }
+    if(search){
+        queryObj.$or=[
+            {artNo: {$regex: search, $options: "i"}},
+            {brand: {$regex: search, $option: "i"}}
+        ]
+    }
+
+    const products = await Product.find(queryObj);
+
+     res.status(200).json({
+        status: "success",
+        results: products.length,
+        data: {
+            products
+        }
+    });
+})
+
+
+module.exports = {addProduct, getAllProduct, getProductById, deleteProduct, updateProduct, filterSearch}
