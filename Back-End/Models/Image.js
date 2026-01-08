@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Product = require("./Product");
 
 const imageSchema = mongoose.Schema({
     url : {
@@ -12,6 +13,10 @@ const imageSchema = mongoose.Schema({
         uploadedBy : {
             type : mongoose.Schema.ObjectId,
             ref : "User"
+        },
+        productId:{
+            type:mongoose.Schema.ObjectId,
+            ref : "Product",
         }
 },{timestamps : true});
 

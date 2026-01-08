@@ -6,7 +6,7 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true   // ⭐ important
+      unique: true   
     },
     brand: {
       type: String,
@@ -38,5 +38,11 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+productSchema.virtual("image", {
+    ref:"Image",
+    localField: "_id",
+    foreignField : "productId"
+})
 
 module.exports = mongoose.model("Product", productSchema);
