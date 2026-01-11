@@ -49,7 +49,7 @@ const getAllProduct = catchAsync(async (req, res, next) => {
 const getProductById = catchAsync(async(req,res,next)=>{
     const productId = req.params.id;
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).populate("images");
     if(!product){
         return(next(new appError("this product cannot be found",404)));
     }

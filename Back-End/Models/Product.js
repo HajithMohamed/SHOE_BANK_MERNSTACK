@@ -39,7 +39,7 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-productSchema.virtual("image", {
+productSchema.virtual("images", {
     ref:"Image",
     localField: "_id",
     foreignField : "productId"
