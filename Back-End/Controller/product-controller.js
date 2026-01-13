@@ -11,17 +11,19 @@ const cloudinary = require("../Config/cloudinary-config");
 const addProduct = catchAsync(async (req, res, next) => {
   const { artNo, brand, price, category, color, stock, sizes } = req.body;
 
+  // Required field check
   if (!artNo || !brand || !price || !category || !sizes?.length) {
     return next(new AppError("Missing required fields", 400));
   }
 
+  // Check if product already exists
   const existingProduct = await Product.findOne({ artNo });
   if (existingProduct) {
     return next(new AppError("This product already exists", 409));
   }
 
-  // 1️⃣ Create product first
-  const product = await Product.create({
+  // Create product
+  const newProduct = await Product.create({
     artNo,
     brand,
     price,
@@ -31,24 +33,22 @@ const addProduct = catchAsync(async (req, res, next) => {
     sizes
   });
 
-  // 2️⃣ Handle images if uploaded
+  // Handle images if uploaded
   if (req.files && req.files.length > 0) {
     const imagePromises = req.files.map(async (file) => {
       const { url, publicId } = await uploadToCloudinary(file.path);
-
       return Image.create({
         url,
         publicId,
-        uploadedBy: req.userInfo.userId, // admin who uploaded
-        productId: product._id
+        uploadedBy: req.userInfo.userId,
+        productId: newProduct._id
       });
     });
-
     await Promise.all(imagePromises);
   }
 
-  // 3️⃣ Populate images before sending response
-  const productWithImages = await Product.findById(product._id).populate("images");
+  // Populate images in the response
+  const productWithImages = await Product.findById(newProduct._id).populate("images");
 
   res.status(201).json({
     status: "success",

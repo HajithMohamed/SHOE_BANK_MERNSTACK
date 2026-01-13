@@ -3,6 +3,7 @@ const {addProduct,getAllProduct,getProductById,deleteProduct, updateProduct, fil
 const authMiddleware  = require("../Middlewares/auth-middleware");
 const adminMiddleware = require("../Middlewares/admin-middleware");
 const paginatedResult = require("../Middlewares/pagination-middleware");
+const uploadMiddleware = require("../Middlewares/upload-middleware");
 const Product = require("../Models/Product");
 
 
