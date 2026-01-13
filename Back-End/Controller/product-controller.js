@@ -8,9 +8,17 @@ const cloudinary = require("../Config/cloudinary-config");
    ADD PRODUCT
 ================================ */
 const addProduct = catchAsync(async (req, res, next) => {
-  const { artNo, brand, price, category, color, stock, size } = req.body;
+  const {
+    artNo,
+    brand,
+    price,
+    category,
+    color,
+    stock,
+    sizes
+  } = req.body;
 
-  if (!artNo || !brand || !price || !category || !size) {
+  if (!artNo || !brand || !price || !category || !sizes?.length) {
     return next(new AppError("Missing required fields", 400));
   }
 
@@ -26,7 +34,7 @@ const addProduct = catchAsync(async (req, res, next) => {
     category,
     color,
     stock,
-    size
+    sizes
   });
 
   res.status(201).json({
@@ -66,10 +74,16 @@ const getProductById = catchAsync(async (req, res, next) => {
 });
 
 /* ===============================
-   UPDATE PRODUCT (SAFE)
+   UPDATE PRODUCT (SAFE FIELDS)
 ================================ */
 const updateProduct = catchAsync(async (req, res, next) => {
-  const allowedFields = ["price", "stock", "color", "size", "category"];
+  const allowedFields = [
+    "price",
+    "stock",
+    "color",
+    "sizes",
+    "category"
+  ];
 
   const filteredBody = {};
   allowedFields.forEach(field => {
@@ -96,7 +110,7 @@ const updateProduct = catchAsync(async (req, res, next) => {
 });
 
 /* ===============================
-   DELETE PRODUCT (WITH IMAGES)
+   DELETE PRODUCT + IMAGES
 ================================ */
 const deleteProduct = catchAsync(async (req, res, next) => {
   const productId = req.params.id;
@@ -122,22 +136,28 @@ const deleteProduct = catchAsync(async (req, res, next) => {
 });
 
 /* ===============================
-   FILTER + SEARCH PRODUCTS
+   FILTER + SEARCH + SORT
 ================================ */
 const filterSearch = catchAsync(async (req, res, next) => {
   const {
-    size,
+    sizes,
     brand,
     category,
     color,
     minPrice,
     maxPrice,
-    search
+    search,
+    sort
   } = req.query;
 
   const queryObj = {};
 
-  if (size) queryObj.size = { $in: size.split(",") };
+  if (sizes) {
+    queryObj.sizes = {
+      $in: sizes.split(",").map(Number)
+    };
+  }
+
   if (brand) queryObj.brand = brand;
   if (category) queryObj.category = category;
   if (color) queryObj.color = color;
@@ -155,8 +175,11 @@ const filterSearch = catchAsync(async (req, res, next) => {
     ];
   }
 
+  const sortBy = sort || "-createdAt";
+
   const products = await Product
     .find(queryObj)
+    .sort(sortBy)
     .populate("images");
 
   res.status(200).json({
