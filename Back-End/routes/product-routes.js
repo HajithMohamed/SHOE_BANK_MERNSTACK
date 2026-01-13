@@ -15,6 +15,7 @@ router.post(
   uploadMiddleware.array("images", 5), // max 5 images
   addProduct
 );
+
 router.get("/get-all-products",authMiddleware,paginatedResult(Product),getAllProduct);
 router.get("/filter-search",authMiddleware,filterSearch);
 router.get("/get-product-by-id/:id",authMiddleware,getProductById);

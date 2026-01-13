@@ -5,7 +5,6 @@ const productSchema = new mongoose.Schema(
     artNo: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
 
