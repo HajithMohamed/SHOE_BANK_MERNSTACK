@@ -1,143 +1,176 @@
 const catchAsync = require("../utils/catchAync");
-const appError = require("../utils/appError");
+const AppError = require("../utils/appError");
 const Product = require("../Models/Product");
+const Image = require("../Models/Image");
+const cloudinary = require("../Config/cloudinary-config");
 
-const addProduct = catchAsync(async(req, res, next)=>{
-    const {artNo, brand, price, category, color, stock,size } = req.body;
+/* ===============================
+   ADD PRODUCT
+================================ */
+const addProduct = catchAsync(async (req, res, next) => {
+  const { artNo, brand, price, category, color, stock, size } = req.body;
 
-    const product = await Product.findOne({artNo});
+  if (!artNo || !brand || !price || !category || !size) {
+    return next(new AppError("Missing required fields", 400));
+  }
 
-    if(product){
-        return(next(new appError("this product is already exist...",403)));
-    }
+  const existingProduct = await Product.findOne({ artNo });
+  if (existingProduct) {
+    return next(new AppError("This product already exists", 409));
+  }
 
-    const newProduct = new Product(
-        {
-            artNo,
-            brand,
-            price,
-            category,
-            color,
-            stock,
-            size
-        }
-    )
+  const product = await Product.create({
+    artNo,
+    brand,
+    price,
+    category,
+    color,
+    stock,
+    size
+  });
 
-    await newProduct.save();
-  
-    
+  res.status(201).json({
+    status: "success",
+    message: "Product added successfully",
+    data: { product }
+  });
+});
 
-    res.status(201).json({
-        status: "success",
-        message: "Product added successfully",
-        data: {
-            product: newProduct
-        }
-    });
-})
-
+/* ===============================
+   GET ALL PRODUCTS (PAGINATED)
+================================ */
 const getAllProduct = catchAsync(async (req, res, next) => {
-    res.status(200).json({
-        status: "success",
-        results: res.paginatedResults.results.length,
-        data: res.paginatedResults
-    });
+  res.status(200).json({
+    status: "success",
+    results: res.paginatedResults.results.length,
+    data: res.paginatedResults
+  });
 });
 
+/* ===============================
+   GET PRODUCT BY ID (WITH IMAGES)
+================================ */
+const getProductById = catchAsync(async (req, res, next) => {
+  const product = await Product
+    .findById(req.params.id)
+    .populate("images");
 
+  if (!product) {
+    return next(new AppError("Product not found", 404));
+  }
 
-const getProductById = catchAsync(async(req,res,next)=>{
-    const productId = req.params.id;
+  res.status(200).json({
+    status: "success",
+    data: { product }
+  });
+});
 
-    const product = await Product.findById(productId).populate("images");
-    if(!product){
-        return(next(new appError("this product cannot be found",404)));
-    }
-    res.status(200).json({
-        status: "success",
-        data: {product}
-    });
-})
-
-const deleteProduct = catchAsync(async(req,res,next)=>{
-    const productId = req.params.id;
-
-    const product = await Product.findByIdAndDelete(productId);
-    
-    if (!product) {
-        return(next(new appError("this product cannot be found",404)));
-    }
-    res.status(200).json({
-        status: "The product was successfully deleted",
-        data: {product}
-    });
-})
-
+/* ===============================
+   UPDATE PRODUCT (SAFE)
+================================ */
 const updateProduct = catchAsync(async (req, res, next) => {
+  const allowedFields = ["price", "stock", "color", "size", "category"];
 
-    const { id } = req.params;
-    const updatedProduct = await Product.findByIdAndUpdate(
-        id,
-        req.body,
-        {
-            new: true,
-            runValidators: true   
-        }
-    );
-
-    if (!updatedProduct) {
-        return next(
-            new AppError("Product not found", 404)
-        );
+  const filteredBody = {};
+  allowedFields.forEach(field => {
+    if (req.body[field] !== undefined) {
+      filteredBody[field] = req.body[field];
     }
+  });
 
-    res.status(200).json({
-        status: "success",
-        message: "Product updated successfully",
-        data: {
-            product: updatedProduct
-        }
-    });
+  const updatedProduct = await Product.findByIdAndUpdate(
+    req.params.id,
+    filteredBody,
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedProduct) {
+    return next(new AppError("Product not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "Product updated successfully",
+    data: { product: updatedProduct }
+  });
 });
 
-const filterSearch = catchAsync(async(req, res, next)=>{
-    const{size, brand, category, color, minPrice, maxPrice, search}=req.query;
+/* ===============================
+   DELETE PRODUCT (WITH IMAGES)
+================================ */
+const deleteProduct = catchAsync(async (req, res, next) => {
+  const productId = req.params.id;
 
-    const queryObj = {};
-    if(size){
-        queryObj.size=size;
-    }
-    if (brand) {
-        queryObj.brand=brand;
-    }
-    if(category){
-        queryObj.category=category;
-    }
-    if(color){
-        queryObj.color=color;
-    }
-    if(minPrice||maxPrice){
-        queryObj.price = {};
-        if(minPrice) queryObj.price.$gte = Number(minPrice);
-        if(maxPrice) queryObj.price.$lte = Number(maxPrice);
-    }
-    if(search){
-        queryObj.$or=[
-            {artNo: {$regex: search, $options: "i"}},
-            {brand: {$regex: search, $options: "i"}}
-        ]
-    }
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new AppError("Product not found", 404));
+  }
 
-    const products = await Product.find(queryObj);
+  const images = await Image.find({ productId });
 
-     res.status(200).json({
-        status: "success",
-        results: products.length,
-        data: {
-            products
-        }
-    });
-})
+  for (const img of images) {
+    await cloudinary.uploader.destroy(img.publicId);
+  }
 
+  await Image.deleteMany({ productId });
+  await Product.findByIdAndDelete(productId);
 
-module.exports = {addProduct, getAllProduct, getProductById, deleteProduct, updateProduct, filterSearch}
+  res.status(200).json({
+    status: "success",
+    message: "Product and related images deleted successfully"
+  });
+});
+
+/* ===============================
+   FILTER + SEARCH PRODUCTS
+================================ */
+const filterSearch = catchAsync(async (req, res, next) => {
+  const {
+    size,
+    brand,
+    category,
+    color,
+    minPrice,
+    maxPrice,
+    search
+  } = req.query;
+
+  const queryObj = {};
+
+  if (size) queryObj.size = { $in: size.split(",") };
+  if (brand) queryObj.brand = brand;
+  if (category) queryObj.category = category;
+  if (color) queryObj.color = color;
+
+  if (minPrice || maxPrice) {
+    queryObj.price = {};
+    if (minPrice) queryObj.price.$gte = Number(minPrice);
+    if (maxPrice) queryObj.price.$lte = Number(maxPrice);
+  }
+
+  if (search) {
+    queryObj.$or = [
+      { artNo: { $regex: search, $options: "i" } },
+      { brand: { $regex: search, $options: "i" } }
+    ];
+  }
+
+  const products = await Product
+    .find(queryObj)
+    .populate("images");
+
+  res.status(200).json({
+    status: "success",
+    results: products.length,
+    data: { products }
+  });
+});
+
+module.exports = {
+  addProduct,
+  getAllProduct,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+  filterSearch
+};

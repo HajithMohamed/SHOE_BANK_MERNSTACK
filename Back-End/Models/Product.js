@@ -40,9 +40,13 @@ const productSchema = new mongoose.Schema(
 );
 
 productSchema.virtual("images", {
-    ref:"Image",
-    localField: "_id",
-    foreignField : "productId"
-})
+  ref: "Image",
+  localField: "_id",
+  foreignField: "productId"
+});
+
+/* ⭐ THIS IS THE MISSING PART ⭐ */
+productSchema.set("toJSON", { virtuals: true });
+productSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("Product", productSchema);

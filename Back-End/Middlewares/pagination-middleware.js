@@ -28,9 +28,11 @@ const paginatedResults = (Model) => catchAsync(async (req, res, next) => {
                 as: "images"
             }
         },
+        { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit }
     ]);
+
     res.paginatedResults = results;
     next();
 });
