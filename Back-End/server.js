@@ -8,7 +8,8 @@ const AppError = require('./utils/appError');
 
 const authRoutes = require('./routes/auth-routes');
 const productRoutes = require("./routes/product-routes")
-const imagRoutes = require("./routes/image-routes")
+const imagRoutes = require("./routes/image-routes");
+const homeRoute = require("./routes/home-routes");
 
 
 const app = express();
@@ -32,11 +33,12 @@ app.use(express.json({ limit: "10kb" }));
 app.use('/api/auth', authRoutes);
 app.use("/api/product",productRoutes);
 app.use("/api/image",imagRoutes);
+app.use("/api/home",homeRoute);
 
 
 app.use(globalErrorHandler);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 const connectToDB = require('./Data-Base/db');
 

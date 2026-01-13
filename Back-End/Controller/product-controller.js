@@ -7,16 +7,9 @@ const cloudinary = require("../Config/cloudinary-config");
 /* ===============================
    ADD PRODUCT
 ================================ */
+
 const addProduct = catchAsync(async (req, res, next) => {
-  const {
-    artNo,
-    brand,
-    price,
-    category,
-    color,
-    stock,
-    sizes
-  } = req.body;
+  const { artNo, brand, price, category, color, stock, sizes } = req.body;
 
   if (!artNo || !brand || !price || !category || !sizes?.length) {
     return next(new AppError("Missing required fields", 400));
@@ -27,6 +20,7 @@ const addProduct = catchAsync(async (req, res, next) => {
     return next(new AppError("This product already exists", 409));
   }
 
+  // 1️⃣ Create product first
   const product = await Product.create({
     artNo,
     brand,
@@ -37,10 +31,29 @@ const addProduct = catchAsync(async (req, res, next) => {
     sizes
   });
 
+  // 2️⃣ Handle images if uploaded
+  if (req.files && req.files.length > 0) {
+    const imagePromises = req.files.map(async (file) => {
+      const { url, publicId } = await uploadToCloudinary(file.path);
+
+      return Image.create({
+        url,
+        publicId,
+        uploadedBy: req.userInfo.userId, // admin who uploaded
+        productId: product._id
+      });
+    });
+
+    await Promise.all(imagePromises);
+  }
+
+  // 3️⃣ Populate images before sending response
+  const productWithImages = await Product.findById(product._id).populate("images");
+
   res.status(201).json({
     status: "success",
     message: "Product added successfully",
-    data: { product }
+    data: { product: productWithImages }
   });
 });
 

@@ -3,66 +3,46 @@ const AppError = require("../utils/appError");
 const Product = require("../Models/Product");
 
 /* ===============================
-   GET FEATURED PRODUCTS
+   HOME DATA (ALL IN ONE)
 ================================ */
-const showFeaturedProduct = catchAsync(async (req, res, next) => {
-  const products = await Product.find({ isFeatured: true }).populate("images");
-
-  res.status(200).json({
-    status: "success",
-    results: products.length,
-    data: { products }
-  });
-});
-
-/* ===============================
-   GET NEW ARRIVAL PRODUCTS
-================================ */
-const showNewArrivalProducts = catchAsync(async (req, res, next) => {
-  const limit = parseInt(req.query.limit) || 10; // optional query param
-  const products = await Product.find()
-    .sort({ createdAt: -1 }) // newest first
-    .limit(limit)
+const getHomeData = catchAsync(async (req, res, next) => {
+  // Featured products
+  const featured = await Product.find({ isFeatured: true })
+    .limit(10)
     .populate("images");
 
-  res.status(200).json({
-    status: "success",
-    results: products.length,
-    data: { products }
-  });
-});
+  // New arrival products (latest)
+  const newArrivals = await Product.find()
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .populate("images");
 
-/* ===============================
-   GET ON DEAL PRODUCTS
-================================ */
-const showOnDealProducts = catchAsync(async (req, res, next) => {
-  const products = await Product.find({ isOnDeal: true }).populate("images");
+  // On deal products
+  const onDeal = await Product.find({ isOnDeal: true })
+    .limit(10)
+    .populate("images");
 
-  res.status(200).json({
-    status: "success",
-    results: products.length,
-    data: { products }
-  });
-});
+  // Products grouped by categories
+  const categories = ["Gents", "Ladies", "Kids", "Boys", "Girls"];
+  const categoryProducts = {};
 
-/* ===============================
-   GET PRODUCTS BY CATEGORY
-================================ */
-const showCategoryProducts = catchAsync(async (req, res, next) => {
-  const { category } = req.params;
-
-  const products = await Product.find({ category }).populate("images");
+  for (const category of categories) {
+    categoryProducts[category] = await Product.find({ category })
+      .limit(10)
+      .populate("images");
+  }
 
   res.status(200).json({
     status: "success",
-    results: products.length,
-    data: { products }
+    data: {
+      featured,
+      newArrivals,
+      onDeal,
+      categoryProducts
+    }
   });
 });
 
 module.exports = {
-  showFeaturedProduct,
-  showNewArrivalProducts,
-  showOnDealProducts,
-  showCategoryProducts
+  getHomeData
 };
