@@ -44,7 +44,7 @@ const deleteUser = catchAync(async(req, res, next)=>{
         return next(AppError("user id is required",403));
     }
 
-    const deletedUser = await User.findByIdAndDelete({userId})
+    const updatedUser = await User.findByIdAndUpdate({userId})
 
     if(!deletedUser){
         return next(AppError(`User (${productId}) is not found`,404));   
