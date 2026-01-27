@@ -63,6 +63,7 @@ const registerUser = catchAsync(async (req, res, next) => {
     const newUser = new User({
         email,
         password, // store plain text directly
+        role : 'user',
         otp,
         otpExpires: otpExpire,
         isVerified: false,
@@ -228,4 +229,20 @@ const logout = catchAsync(async (req, res, next) => {
         message: "Logged out successfully"
     });
 });
+
+const changePassword = catchAsync(async(req, res, next)=>{
+    const {email,oldPassword} = req.body;
+
+    if(!email && !oldPassword){
+        next(new AppError("please provide the details",403));
+    }
+
+    const user = User.findOne({email,oldPassword})
+
+    if(!user){
+        next(new AppError("The user is not found",404));
+    }
+
+    
+})
 module.exports = { registerUser,otpVerify,login,logout,resendOTP};
