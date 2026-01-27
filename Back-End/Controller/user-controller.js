@@ -59,22 +59,68 @@ const deleteUser = catchAync(async(req, res, next)=>{
 })
 
 const updateUser = catchAync(async(req, res, next)=>{
-     const userId = req.params.userId;
+    const user = req.userInfo;
 
-    if(!userId){
-        return next(AppError("user id is required",403));
+    const allowedUpdates = [
+        'supplierInfo.name',
+        'supplierInfo.companyName',
+        'supplierInfo.mobileNo',
+        'supplierInfo.address',
+        'clearanceInfo.name',
+        'clearanceInfo.mobileNo',
+        'clearanceInfo.address',
+        'clearanceInfo.accountNo',
+        'customerInfo.name',
+        'customerInfo.shopName',
+        'customerInfo.mobileNo',
+        'customerInfo.accountNo',
+    ];
+
+    const updates = {};
+    Object.keys(req.body).forEach((key) => {
+        if (allowedUpdates.includes(key)) {
+            // Handle nested fields (dot notation)
+            const [parent, child] = key.split('.');
+            if (child) {
+                if (!updates[parent]) updates[parent] = {};
+                updates[parent][child] = req.body[key];
+            } else {
+                updates[key] = req.body[key];
+            }
+        }
+    });
+
+    // 4. If no valid fields were sent
+    if (Object.keys(updates).length === 0) {
+        return next(new AppError('No valid fields provided for update', 400));
     }
 
-    const user = await User.findByIdAndDelete({userId})
-
-    if(!user){
-        return next(AppError(`User (${productId}) is not found`,404));   
+    // 5. Prevent updating sensitive/critical fields
+    if (req.body.password || req.body.role || req.body.isVerified || req.body.email) {
+        return next(new AppError('You cannot update password, role, verification status or email here', 403));
     }
+
+    // 6. Perform the update
+    const updatedUser = await User.findByIdAndUpdate(
+        user._id,
+        { $set: updates },
+        { new: true, runValidators: true }
+    ).select('-password -otp -resetPasswordOtp -changePasswordOTP -__v -createdAt -updatedAt');
 
     res.status(200).json({
-        message : `Useer (${productId}) is updated successfully!!`,
+        status: 'success',
+        message: 'Your profile has been updated successfully',
+        data: updatedUser,
+    });  
+})
+
+const getAllUserCount = catchAync(async(req, res, next)=>{
+    const userCount = await User.countDocuments();
+
+    res.status(200).json({
+        message : "user count fetched successfully!!",
         success : true,
-        data : user
+        data : userCount
     })
 })
 
@@ -82,4 +128,6 @@ module.exports = {
     getAllUser,
     getSingleUser,
     deleteUser,
+    updateUser,
+    getAllUserCount,
 }
