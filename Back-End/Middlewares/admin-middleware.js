@@ -1,5 +1,5 @@
 const AppError = require('../utils/appError');
-const catchAsync = require('../utils/catchAync');
+const catchAsync = require('../utils/catchAsync');
 
 const adminMiddleware = catchAsync(async (req, res, next) => {
   if (!req.userInfo || !req.userInfo.role) {

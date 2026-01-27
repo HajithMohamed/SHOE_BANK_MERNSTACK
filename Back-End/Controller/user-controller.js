@@ -1,7 +1,8 @@
-const catchAync = require("../utils/catchAync");
+const catchAync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const User = require("../Models/Users");
 
+let count = 0;
 
 const getAllUser = catchAync(async(req, res, next)=>{
     const users = await User.find().select("-password -otp -resetPasswordOtp -__v -createdAt -updatedAt");
@@ -25,8 +26,7 @@ const getSingleUser = catchAync(async(req, res, next)=>{
         return next(AppError("user id is required",403));
     }
 
-    const singleUser = await User.findById({userId}).select("-password -otp -resetPasswordOtp -__v -createdAt -updatedAt");
-
+   const singleUser = await User.findById(userId).select("-password");
     if(!singleUser){
         return next(AppError(`User (${userId}) is not found`,404));   
     }
@@ -48,7 +48,7 @@ const deleteUser = catchAync(async(req, res, next)=>{
    const deletedUser = await User.findByIdAndDelete(userId);
 
     if(!deletedUser){
-        return next(AppError(`User (${productId}) is not found`,404));   
+        return next(AppError(`User (${userId}) is not found`,404));   
     }
 
     res.status(200).json({
@@ -58,71 +58,52 @@ const deleteUser = catchAync(async(req, res, next)=>{
     })
 })
 
-const updateUser = catchAync(async(req, res, next)=>{
-    const user = req.userInfo;
+const updateUser = catchAync(async (req, res, next) => {
+  const userId = req.params.id;
 
-    const allowedUpdates = [
-        'supplierInfo.name',
-        'supplierInfo.companyName',
-        'supplierInfo.mobileNo',
-        'supplierInfo.address',
-        'clearanceInfo.name',
-        'clearanceInfo.mobileNo',
-        'clearanceInfo.address',
-        'clearanceInfo.accountNo',
-        'customerInfo.name',
-        'customerInfo.shopName',
-        'customerInfo.mobileNo',
-        'customerInfo.accountNo',
-    ];
+  // Allowed updates ONLY
+  const allowedFields = ["email", "isActive"];
 
-    const updates = {};
-    Object.keys(req.body).forEach((key) => {
-        if (allowedUpdates.includes(key)) {
-            // Handle nested fields (dot notation)
-            const [parent, child] = key.split('.');
-            if (child) {
-                if (!updates[parent]) updates[parent] = {};
-                updates[parent][child] = req.body[key];
-            } else {
-                updates[key] = req.body[key];
-            }
-        }
-    });
-
-    // 4. If no valid fields were sent
-    if (Object.keys(updates).length === 0) {
-        return next(new AppError('No valid fields provided for update', 400));
+  const updates = {};
+  Object.keys(req.body).forEach((key) => {
+    if (allowedFields.includes(key)) {
+      updates[key] = req.body[key];
     }
+  });
 
-    // 5. Prevent updating sensitive/critical fields
-    if (req.body.password || req.body.role || req.body.isVerified || req.body.email) {
-        return next(new AppError('You cannot update password, role, verification status or email here', 403));
-    }
+  if (Object.keys(updates).length === 0) {
+    return next(new AppError("No valid fields to update", 400));
+  }
 
-    // 6. Perform the update
-    const updatedUser = await User.findByIdAndUpdate(
-        user._id,
-        { $set: updates },
-        { new: true, runValidators: true }
-    ).select('-password -otp -resetPasswordOtp -changePasswordOTP -__v -createdAt -updatedAt');
+  const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+    new: true,
+    runValidators: true
+  }).select("-password");
 
-    res.status(200).json({
-        status: 'success',
-        message: 'Your profile has been updated successfully',
-        data: updatedUser,
-    });  
-})
+  if (!updatedUser) {
+    return next(new AppError("User not found", 404));
+  }
 
-const getAllUserCount = catchAync(async(req, res, next)=>{
-    const userCount = await User.countDocuments();
+  res.status(200).json({
+    status: "success",
+    message: "User updated successfully",
+    data: { user: updatedUser }
+  });
+});
 
-    res.status(200).json({
-        message : "user count fetched successfully!!",
-        success : true,
-        data : userCount
-    })
-})
+
+const getAllUserCount = catchAync(async (req, res) => {
+  const counts = await User.aggregate([
+    { $group: { _id: "$role", count: { $sum: 1 } } }
+  ]);
+
+  res.status(200).json({
+    message: "User counts fetched successfully",
+    success: true,
+    data: counts
+  });
+});
+
 
 module.exports = {
     getAllUser,

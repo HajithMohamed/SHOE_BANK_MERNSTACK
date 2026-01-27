@@ -1,5 +1,5 @@
 const AppError = require("../utils/appError");
-const catchAsync = require("../utils/catchAync");
+const catchAsync = require("../utils/catchAsync");
 const Image = require("../Models/Image");
 const uploadToCloudinary = require("../Helper/cloudinary-helper")
 const fs = require("fs")

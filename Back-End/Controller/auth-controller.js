@@ -1,4 +1,4 @@
-const catchAsync = require('../utils/catchAync'); 
+const catchAsync = require('../utils/catchAsync'); 
 const sendEmail = require('../utils/send-mail');
 const generateOtp = require("../utils/generate-otp");
 const AppError = require("../utils/appError");
@@ -58,7 +58,7 @@ const registerUser = catchAsync(async (req, res, next) => {
     const newUser = new User({
         email,
         password,
-        role: "user",
+        role: "retail_user",
         otp,
         otpExpires: otpExpire,
         isVerified: false,

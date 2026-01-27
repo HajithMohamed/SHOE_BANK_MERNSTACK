@@ -1,4 +1,4 @@
-const catchAsync = require("../utils/catchAync");
+const catchAsync = require("../utils/catchAsync");
 
 
 const paginatedResults = (Model) => catchAsync(async (req, res, next) => {
@@ -15,7 +15,7 @@ const paginatedResults = (Model) => catchAsync(async (req, res, next) => {
         results.next = { page: page + 1, limit };
     }
 
-    if (skip > 0) {
+    if (skip > 0) { 
         results.previous = { page: page - 1, limit };
     }
 
