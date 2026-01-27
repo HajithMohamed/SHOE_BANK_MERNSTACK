@@ -4,15 +4,16 @@ const User = require("../Models/Users");
 
 
 const getAllUser = catchAync(async(req, res, next)=>{
-    const users = await User.find();
+    const users = await User.find().select("-password -otp -resetPasswordOtp -__v -createdAt -updatedAt");
 
-    if(users && users.length<0){
+    if(users && users.length===0){
         return next(AppError("Users are not found",404));
     }
 
      res.status(200).json({
         message : "users fetched successfully!!",
         success : true,
+        results: users.length,
         data : users
     })
 })
@@ -24,14 +25,14 @@ const getSingleUser = catchAync(async(req, res, next)=>{
         return next(AppError("user id is required",403));
     }
 
-    const singleUser = await User.findById({userId})
+    const singleUser = await User.findById({userId}).select("-password -otp -resetPasswordOtp -__v -createdAt -updatedAt");
 
     if(!singleUser){
-        return next(AppError(`User (${productId}) is not found`,404));   
+        return next(AppError(`User (${userId}) is not found`,404));   
     }
 
     res.status(200).json({
-        message : `Useer (${productId}) is fetched successfully!!`,
+        message : `Useer (${userId}) is fetched successfully!!`,
         success : true,
         data : singleUser
     })
@@ -44,14 +45,14 @@ const deleteUser = catchAync(async(req, res, next)=>{
         return next(AppError("user id is required",403));
     }
 
-    const updatedUser = await User.findByIdAndUpdate({userId})
+   const deletedUser = await User.findByIdAndDelete(userId);
 
     if(!deletedUser){
         return next(AppError(`User (${productId}) is not found`,404));   
     }
 
     res.status(200).json({
-        message : `Useer (${productId}) is deleted successfully!!`,
+        message : `User (${userId}) is deleted successfully!!`,
         success : true,
         data : deletedUser
     })
@@ -81,5 +82,4 @@ module.exports = {
     getAllUser,
     getSingleUser,
     deleteUser,
-
 }

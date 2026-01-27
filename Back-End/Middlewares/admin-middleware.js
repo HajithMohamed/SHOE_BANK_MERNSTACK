@@ -1,24 +1,16 @@
-const catchAsync = require("../utils/catchAync")
-const appError = require("../utils/appError")
-const User = require("../Models/Users");
+const AppError = require('../utils/appError');
+const catchAsync = require('../utils/catchAync');
 
-const adminMiddleware = catchAsync(async(req, res, next)=>{
-    const userId = req.userInfo.id;
+const adminMiddleware = catchAsync(async (req, res, next) => {
+  if (!req.userInfo || !req.userInfo.role) {
+    return next(new AppError('Authentication required', 401));
+  }
 
-    const user =  await User.findById(userId)
+  if (req.userInfo.role !== 'admin') {
+    return next(new AppError('You do not have permission to perform this action. Admin access required.', 403));
+  }
 
-    if(!user){
-        return(next (new appError("User is not found",404)));
-    }
+  next();
+});
 
-    if((user.role)!=="admin"){
-       return next(
-            new appError("You are not authorized to perform this action", 403)
-        );
-    }
-
-    console.log(user.role);
-    next();
-})
-
-module.exports = adminMiddleware
+module.exports = adminMiddleware;
