@@ -27,7 +27,6 @@ const createSendToken = (user, statusCode, res, message) => {
 
   res.cookie("token", token, cookieOption);
 
-  // remove sensitive data
   user.password = undefined;
   user.passwordConfirm = undefined;
   user.otp = undefined;
@@ -43,27 +42,23 @@ const createSendToken = (user, statusCode, res, message) => {
 const registerUser = catchAsync(async (req, res, next) => {
     const { email, password, confirm_pass } = req.body;
 
-    // 🔹 Validate required fields
     if (!email) return next(new AppError("Email is required", 400));
     if (!password || !confirm_pass)
         return next(new AppError("Password and confirmation are required", 400));
     if (password !== confirm_pass)
         return next(new AppError("Passwords do not match", 400));
 
-    // 🔹 Check for existing user
     const existingUser = await User.findOne({ email });
     if (existingUser)
         return next(new AppError("Provided email already exists, try a different one", 400));
 
-    // 🔹 Generate OTP
     const otp = generateOtp();
-    const otpExpire = Date.now() + 24 * 60 * 60 * 1000; // valid for 24 hours
+    const otpExpire = Date.now() + 24 * 60 * 60 * 1000;
 
-    // 🔹 Create user document without hashing
     const newUser = new User({
         email,
-        password, // store plain text directly
-        role : 'user',
+        password,
+        role: "user",
         otp,
         otpExpires: otpExpire,
         isVerified: false,
@@ -71,7 +66,6 @@ const registerUser = catchAsync(async (req, res, next) => {
 
     const savedUser = await newUser.save();
 
-    // 🔹 Send OTP email
     await sendEmail({
         email: savedUser.email,
         subject: "Email Verification - Your OTP Code",
@@ -87,22 +81,22 @@ const registerUser = catchAsync(async (req, res, next) => {
 
 
 const otpVerify = catchAsync(async(req,res,next)=>{
-    const {otp,userId} = req.body
+    const { otp, userId } = req.body;
 
-    if(!otp||!userId){
+    if (!otp || !userId) {
         return next(new AppError("User ID and OTP are required", 400));
     }
-    const user = await User.findById(userId)
+    const user = await User.findById(userId);
 
     if (!user) {
         return next(new AppError("User not found", 400));
     }
 
-    if(user.otp.toString()!==otp.toString()){
+    if (user.otp.toString() !== otp.toString()) {
         return next(new AppError("Invalid OTP", 400));
     }
 
-    if(Date.now() > new Date(user.otpExpires).getTime()){
+    if (Date.now() > new Date(user.otpExpires).getTime()) {
         return next(new AppError("OTP expired, Please request new otp", 400));
     }
 
@@ -116,16 +110,16 @@ const otpVerify = catchAsync(async(req,res,next)=>{
         email: user.email,
         subject: "Welcome to Shoe Bank 👟✨",
         html: `
-          <h1>Welcome to Shoe Bank!</h1>
-          <p>Hi ${user.userName},</p>
-          <p>Thank you for joining <strong>Shoe Bank</strong>, your one-stop shop for the latest footwear trends.</p>
-          <p>We’re excited to have you onboard. Explore our exclusive collections and step up your style!</p>
-          <br/>
-          <p>Happy Shopping!<br/>The Shoe Bank Team</p>
-        `
-      });
+                    <h1>Welcome to Shoe Bank!</h1>
+                    <p>Hi ${user.userName},</p>
+                    <p>Thank you for joining <strong>Shoe Bank</strong>, your one-stop shop for the latest footwear trends.</p>
+                    <p>We’re excited to have you onboard. Explore our exclusive collections and step up your style!</p>
+                    <br/>
+                    <p>Happy Shopping!<br/>The Shoe Bank Team</p>
+                `,
+    });
     createSendToken(user, 200, res, "Email has been verified.");
-})
+});
 
 const resendOTP = catchAsync(async (req, res, next) => {
     const { email } = req.body;
@@ -137,7 +131,7 @@ const resendOTP = catchAsync(async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-        return next(new AppError('User not found', 404));
+        return next(new AppError("User not found", 404));
     }
 
     if (user.isVerified) {
@@ -155,29 +149,28 @@ const resendOTP = catchAsync(async (req, res, next) => {
             email: user.email,
             subject: "Resend OTP - Verify Your Email for Shoe Bank",
             html: `
-                <h1>Email Verification - New OTP</h1>
-                <p>Hi ${user.userName},</p>
+                                <h1>Email Verification - New OTP</h1>
+                                <p>Hi ${user.userName},</p>
         
-                <p>We received a request to resend your OTP for verifying your email address at <strong>Shoe Bank 👟✨</strong>.</p>
+                                <p>We received a request to resend your OTP for verifying your email address at <strong>Shoe Bank 👟✨</strong>.</p>
         
-                <p>Your new OTP is:</p>
+                                <p>Your new OTP is:</p>
         
-                <h2 style="color: #2e6da4;">${newOTP}</h2>
+                                <h2 style="color: #2e6da4;">${newOTP}</h2>
         
-                <p><strong>Note:</strong> This OTP is valid for the next 24 hours. Please do not share it with anyone.</p>
+                                <p><strong>Note:</strong> This OTP is valid for the next 24 hours. Please do not share it with anyone.</p>
         
-                <p>If you didn’t request this OTP, you can safely ignore this email.</p>
+                                <p>If you didn’t request this OTP, you can safely ignore this email.</p>
         
-                <br/>
-                <p>Best regards,</p>
-                <p><strong>The Shoe Bank Team</strong></p>
-            `
+                                <br/>
+                                <p>Best regards,</p>
+                                <p><strong>The Shoe Bank Team</strong></p>
+                        `,
         });
-        
 
         res.status(200).json({
             status: "success",
-            message: "OTP sent successfully."
+            message: "OTP sent successfully.",
         });
     } catch (error) {
         user.otp = undefined;
@@ -195,14 +188,12 @@ const login = catchAsync(async (req, res, next) => {
         return next(new AppError("Please provide email and password", 400));
     }
 
-    // 🔹 Select password because in schema select:false
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
         return next(new AppError("Incorrect email or password", 401));
     }
 
-    // 🔹 Use bcryptjs from the model
     const isPasswordCorrect = await user.correctPassword(pass, user.password);
 
     if (!isPasswordCorrect) {
@@ -221,28 +212,201 @@ const logout = catchAsync(async (req, res, next) => {
     res.cookie("token", "loggedout", {
         expires: new Date(Date.now() + 10 * 100),
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production"
+        secure: process.env.NODE_ENV === "production",
     });
 
     res.status(200).json({
         status: "success",
-        message: "Logged out successfully"
+        message: "Logged out successfully",
     });
 });
 
-const changePassword = catchAsync(async(req, res, next)=>{
-    const {email,oldPassword} = req.body;
+const changePassword = catchAsync(async (req, res, next) => {
+    const { oldPassword, newPassword, passwordConfirm } = req.body;
 
-    if(!email && !oldPassword){
-        next(new AppError("please provide the details",403));
+    if (!oldPassword || !newPassword || !passwordConfirm) {
+        return next(new AppError("Old password, new password, and confirmation are required", 400));
     }
 
-    const user = User.findOne({email,oldPassword})
-
-    if(!user){
-        next(new AppError("The user is not found",404));
+    if (newPassword !== passwordConfirm) {
+        return next(new AppError("New passwords do not match", 400));
     }
 
-    
-})
-module.exports = { registerUser,otpVerify,login,logout,resendOTP};
+    if (newPassword.length < 8) {
+        return next(new AppError("New password must be at least 8 characters long", 400));
+    }
+
+    const user = req.userInfo;
+    if (!user) {
+        return next(new AppError("Authentication required", 401));
+    }
+
+    const isCorrect = await user.correctPassword(oldPassword, user.password);
+    if (!isCorrect) {
+        return next(new AppError("Current password is incorrect", 401));
+    }
+
+    user.password = newPassword;
+
+    await user.save();
+
+    await sendEmail({
+        email: user.email,
+        subject: "Shoe Bank - Password Changed Successfully",
+        html: `
+                        <h2>Password Updated</h2>
+                        <p>Your password was successfully changed.</p>
+                        <p>If this wasn't you, please contact support immediately.</p>
+                        <br>
+                        <p>Shoe Bank Team 👟</p>
+                `,
+    });
+
+    res.status(200).json({
+        status: "success",
+        message: "Password updated successfully",
+    });
+});
+
+const forgotPassword = catchAsync(async(req, res, next)=>{
+    const { email } = req.body;
+
+    if (!email) {
+        return next(new AppError("Email is required", 401));
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        return next(new AppError("User not found", 404));
+    }
+
+    const otp = generateOtp();
+
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "Shoe Bank - Password Reset Code",
+            html: `
+                                <h2>Password Reset Request</h2>
+                                <p>Use this code to reset your password:</p>
+                                <h1 style="letter-spacing: 8px;">${otp}</h1>
+                                <p>This code is valid for <strong>15 minutes</strong>.</p>
+                                <p>If you didn't request this, please ignore this email.</p>
+                                <br>
+                                <p>Shoe Bank Team 👟</p>
+                        `,
+        });
+
+        res.status(200).json({
+            status: "success",
+            message: "Reset code sent to your email",
+        });
+    } catch (err) {
+        user.resetPasswordOtp = undefined;
+        user.resetPasswordOtpExpires = undefined;
+        await user.save({ validateBeforeSave: false });
+        return next(new AppError("Failed to send email. Try again later.", 500));
+    }
+});
+
+const resendResetPasswordOtp = catchAsync(async (req, res, next) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return next(new AppError("Email is required", 400));
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        return next(new AppError("User not found", 404));
+    }
+
+    const otp = generateOtp();
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    await sendEmail({
+        email: user.email,
+        subject: "Shoe Bank - Password Reset Code",
+        html: `
+                        <h2>Password Reset Request</h2>
+                        <p>Use this code to reset your password:</p>
+                        <h1 style="letter-spacing: 8px;">${otp}</h1>
+                        <p>This code is valid for <strong>15 minutes</strong>.</p>
+                        <p>If you didn't request this, please ignore this email.</p>
+                        <br>
+                        <p>Shoe Bank Team 👟</p>
+                `,
+    });
+
+    res.status(200).json({
+        status: "success",
+        message: "Reset code sent to your email",
+    });
+});
+
+const resetPassword = catchAsync(async(req, res, next)=>{
+    const {email, otp, newPassword, confirmPassword} = req.body;
+
+    if(!email || !otp || !newPassword || !confirmPassword){
+        return next(new AppError("All fields are required!",403));
+    }
+
+    if(newPassword!==confirmPassword){
+        return next(new AppError("Passwords are not matched!!",403));
+    }
+
+    const user = await User.findOne({email});
+
+    if(!user || !user.resetPasswordOtp){
+        return next(new AppError("User is not found",404));
+    }
+
+    if(user.resetPasswordOtp.toString()!== otp.toString()){
+        return next(new AppError("Invalid reset code",400));
+    }
+    if(user.resetPasswordOtpExpires && user.resetPasswordOtpExpires<Date.now()){
+        return next(new AppError("Code is expired",400));
+    }
+
+    user.password = newPassword;
+
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordOtpExpires = undefined;
+
+    await user.save();
+
+    await sendEmail({
+        email: user.email,
+        subject: "Shoe Bank - Password Changed Successfully",
+        html: `<p>Your password was successfully updated.</p><p>You can now log in with your new password.</p>`
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Password reset successful. Please login."
+    });
+});
+
+
+
+module.exports = { 
+    registerUser,
+    otpVerify,
+    login,
+    logout,
+    resendOTP,
+    changePassword,
+    forgotPassword,
+    resendResetPasswordOtp,
+    resetPassword,
+};
