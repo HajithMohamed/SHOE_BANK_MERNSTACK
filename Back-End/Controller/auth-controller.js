@@ -22,7 +22,7 @@ const createSendToken = (user, statusCode, res, message) => {
     ),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "Lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   };
 
   res.cookie("token", token, cookieOption);
@@ -182,9 +182,9 @@ const resendOTP = catchAsync(async (req, res, next) => {
 });
 
 const login = catchAsync(async (req, res, next) => {
-    const { email, pass } = req.body;
+    const { email, password } = req.body;
 
-    if (!email || !pass) {
+    if (!email || !password) {
         return next(new AppError("Please provide email and password", 400));
     }
 
@@ -194,7 +194,7 @@ const login = catchAsync(async (req, res, next) => {
         return next(new AppError("Incorrect email or password", 401));
     }
 
-    const isPasswordCorrect = await user.correctPassword(pass, user.password);
+    const isPasswordCorrect = await user.correctPassword(password, user.password);
 
     if (!isPasswordCorrect) {
         return next(new AppError("Incorrect email or password", 401));
@@ -272,7 +272,7 @@ const forgotPassword = catchAsync(async(req, res, next)=>{
     const { email } = req.body;
 
     if (!email) {
-        return next(new AppError("Email is required", 401));
+        return next(new AppError("Email is required", 400));
     }
 
     const user = await User.findOne({ email });
