@@ -1,37 +1,31 @@
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const Customer = require("../Models/Customer");
+const filterObj = require("../utils/filter-object");
 
 const addCustomer = catchAsync(async(req, res, next)=>{
-    const {name, shopName, mobileNo, address, email, accountNo} = req.body;
+    // Filter allowed fields only
+    const customerData = filterObj(req.body, "name", "shopName", "mobileNo", "address", "email", "accountNo");
 
-    if(!name && !shopName && !mobileNo && !address && !email && !accountNo ){
+    if(Object.keys(customerData).length === 0){
         return next(new AppError("All fields are required",400));
     }
 
-    const existCustomer = await Customer.findOne({shopName});
+    const existCustomer = await Customer.findOne({shopName: customerData.shopName});
 
     if(existCustomer){
         return next(new AppError("This customer already exist",400));
     }
 
-    const newCustomer = new Customer({
-        name,
-        shopName,
-        mobileNo,
-        address,
-        email,
-        accountNo
-    });
+    const newCustomer = new Customer(customerData);
 
     await newCustomer.save();
 
     res.status(200).json({
         success : true,
-        message : "New customer is crearted successfully",
+        message : "New customer is created successfully",
         data : newCustomer
     });
-
 });
 
 const getAllCustomer = catchAsync(async(req, res, next)=>{
@@ -73,34 +67,26 @@ const getSingleCustomer = catchAsync(async(req, res, next)=>{
 const updateCustomer = catchAsync(async(req, res, next)=>{
     const customerID = req.params.id;
 
-    const allowedFields = ["name","shopName","address","mobileNo","email","accountNo"]
+    const updates = filterObj(req.body, "name", "shopName", "address", "mobileNo", "email", "accountNo");
 
-    const updates = {}
-
-    Object.keys(req.body).forEach((key)=>{
-        if(allowedFields.includes(key)){
-            updates[key] = req.body[key]
-        }
-    })
-
-    if(Object.keys(updates).length===0){
-        return next(new AppError('No valid fields to update',404));
+    if(Object.keys(updates).length === 0){
+        return next(new AppError('No valid fields to update', 400));
     }
 
-    const updateCustomer = await Customer.findByIdAndUpdate(customerID, updates, {
+    const updatedCustomer = await Customer.findByIdAndUpdate(customerID, updates, {
         new : true,
         runValidators : true
     })
 
-    if (!updatedUser) {
+    if (!updatedCustomer) {
         return next(new AppError("Customer not found", 404));
     }
 
-  res.status(200).json({
-    status: "success",
-    message: "Customer updated successfully",
-    data: { customer: updateCustomer }
-  });
+    res.status(200).json({
+        status: "success",
+        message: "Customer updated successfully",
+        data: { customer: updatedCustomer }
+    });
 })
 
 const deleteCustomer = catchAsync(async(req, res, next)=>{
@@ -120,7 +106,7 @@ const deleteCustomer = catchAsync(async(req, res, next)=>{
 })
 
 const getAllCustomerCount = catchAsync(async(req, res, next)=>{
-    const customersCount = await Customer.countDocument;
+    const customersCount = await Customer.countDocuments();
 
     res.status(200).message({
         success : true,
