@@ -34,6 +34,16 @@ const customerSchema = new mongoose.Schema(
       required: true,
     },
 
+    email :{
+      type : String,
+      required : true,
+      validate: [validator.isEmail, "Invalid email address"],
+    },
+
+    accountNo : {
+      type : Number,
+    },
+
     // Financials
     creditLimit: {
       type: Number,
