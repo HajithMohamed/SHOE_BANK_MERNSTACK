@@ -22,7 +22,10 @@ const customerSchema = new mongoose.Schema(
       trim: true,
       unique: true,
     },
-
+    shopLocatedAt: {
+      type: String,
+      trim: true,
+    },
     mobileNo: {
       type: String,
       required: true,
