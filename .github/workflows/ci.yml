@@ -22,15 +22,13 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: Back-End/package-lock.json  # Changed from backend
     
     - name: Install backend dependencies
-      working-directory: ./Back-End  # Changed from ./backend
-      run: npm ci
+      working-directory: ./Back-End
+      run: npm install
     
     - name: Run backend tests
-      working-directory: ./Back-End  # Changed from ./backend
+      working-directory: ./Back-End
       run: npm test
       env:
         NODE_ENV: test
@@ -50,19 +48,17 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: Front-End/package-lock.json  # Changed from frontend
     
     - name: Install frontend dependencies
-      working-directory: ./Front-End  # Changed from ./frontend
-      run: npm ci
+      working-directory: ./Front-End
+      run: npm install
     
     - name: Build frontend
-      working-directory: ./Front-End  # Changed from ./frontend
+      working-directory: ./Front-End
       run: npm run build
     
     - name: Run frontend tests
-      working-directory: ./Front-End  # Changed from ./frontend
+      working-directory: ./Front-End
       run: npm test -- --watchAll=false
       env:
         CI: true
@@ -80,17 +76,17 @@ jobs:
         node-version: 20.x
     
     - name: Install backend dependencies
-      working-directory: ./Back-End  # Changed from ./backend
-      run: npm ci
+      working-directory: ./Back-End
+      run: npm install
     
     - name: Install frontend dependencies
-      working-directory: ./Front-End  # Changed from ./frontend
-      run: npm ci
+      working-directory: ./Front-End
+      run: npm install
     
     - name: Lint backend
-      working-directory: ./Back-End  # Changed from ./backend
+      working-directory: ./Back-End
       run: npm run lint --if-present
     
     - name: Lint frontend
-      working-directory: ./Front-End  # Changed from ./frontend
+      working-directory: ./Front-End
       run: npm run lint --if-present
