@@ -25,7 +25,7 @@ jobs:
     
     - name: Install backend dependencies
       working-directory: ./Back-End
-      run: npm install
+      run: npm ci
     
     - name: Run backend tests
       working-directory: ./Back-End
@@ -51,7 +51,7 @@ jobs:
     
     - name: Install frontend dependencies
       working-directory: ./Front-End/Shoe-bank-frontend
-      run: npm install
+      run: npm ci
     
     - name: Build frontend
       working-directory: ./Front-End/Shoe-bank-frontend
@@ -77,11 +77,11 @@ jobs:
     
     - name: Install backend dependencies
       working-directory: ./Back-End
-      run: npm install
+      run: npm ci
     
     - name: Install frontend dependencies
       working-directory: ./Front-End/Shoe-bank-frontend
-      run: npm install
+      run: npm ci
     
     - name: Lint backend
       working-directory: ./Back-End
@@ -89,4 +89,4 @@ jobs:
     
     - name: Lint frontend
       working-directory: ./Front-End/Shoe-bank-frontend
-      run: npm run lint --if-present
+      run: npx eslint .
