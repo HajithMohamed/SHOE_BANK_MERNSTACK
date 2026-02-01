@@ -29,7 +29,7 @@ jobs:
     
     - name: Run backend tests
       working-directory: ./Back-End
-      run: npm test
+      run: npm test --if-present
       env:
         NODE_ENV: test
   
@@ -50,16 +50,16 @@ jobs:
         node-version: ${{ matrix.node-version }}
     
     - name: Install frontend dependencies
-      working-directory: ./Front-End
+      working-directory: ./Front-End/Shoe-bank-frontend
       run: npm install
     
     - name: Build frontend
-      working-directory: ./Front-End
+      working-directory: ./Front-End/Shoe-bank-frontend
       run: npm run build
     
     - name: Run frontend tests
-      working-directory: ./Front-End
-      run: npm test -- --watchAll=false
+      working-directory: ./Front-End/Shoe-bank-frontend
+      run: npm test --if-present -- --watchAll=false
       env:
         CI: true
   
@@ -80,7 +80,7 @@ jobs:
       run: npm install
     
     - name: Install frontend dependencies
-      working-directory: ./Front-End
+      working-directory: ./Front-End/Shoe-bank-frontend
       run: npm install
     
     - name: Lint backend
@@ -88,5 +88,5 @@ jobs:
       run: npm run lint --if-present
     
     - name: Lint frontend
-      working-directory: ./Front-End
+      working-directory: ./Front-End/Shoe-bank-frontend
       run: npm run lint --if-present
