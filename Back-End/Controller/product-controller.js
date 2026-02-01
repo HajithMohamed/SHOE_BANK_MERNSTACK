@@ -3,35 +3,28 @@ const AppError = require("../utils/appError");
 const Product = require("../Models/Product");
 const Image = require("../Models/Image");
 const cloudinary = require("../Config/cloudinary-config");
+const filterObj = require("../utils/filter-object");
 
 /* ===============================
    ADD PRODUCT
 ================================ */
 
 const addProduct = catchAsync(async (req, res, next) => {
-  const { artNo, brand, price, category, color, stock, sizes } = req.body;
+  // Filter allowed fields only
+  const newProductData = filterObj(req.body, "artNo", "brand", "price", "category", "color", "stock", "sizes");
 
-  // Required field check
-  if (!artNo || !brand || !price || !category || !sizes?.length) {
+  if (Object.keys(newProductData).length === 0) {
     return next(new AppError("Missing required fields", 400));
   }
 
   // Check if product already exists
-  const existingProduct = await Product.findOne({ artNo });
+  const existingProduct = await Product.findOne({ artNo: newProductData.artNo });
   if (existingProduct) {
     return next(new AppError("This product already exists", 409));
   }
 
   // Create product
-  const newProduct = await Product.create({
-    artNo,
-    brand,
-    price,
-    category,
-    color,
-    stock,
-    sizes
-  });
+  const newProduct = await Product.create(newProductData);
 
   // Handle images if uploaded
   if (req.files && req.files.length > 0) {
@@ -90,20 +83,11 @@ const getProductById = catchAsync(async (req, res, next) => {
    UPDATE PRODUCT (SAFE FIELDS)
 ================================ */
 const updateProduct = catchAsync(async (req, res, next) => {
-  const allowedFields = [
-    "price",
-    "stock",
-    "color",
-    "sizes",
-    "category"
-  ];
+  const filteredBody = filterObj(req.body, "price", "stock", "color", "sizes", "category");
 
-  const filteredBody = {};
-  allowedFields.forEach(field => {
-    if (req.body[field] !== undefined) {
-      filteredBody[field] = req.body[field];
-    }
-  });
+  if (Object.keys(filteredBody).length === 0) {
+    return next(new AppError("No valid fields to update", 400));
+  }
 
   const updatedProduct = await Product.findByIdAndUpdate(
     req.params.id,

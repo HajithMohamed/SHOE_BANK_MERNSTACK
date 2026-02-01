@@ -1,8 +1,8 @@
 const catchAync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const User = require("../Models/Users");
+const filterObj = require("../utils/filter-object");
 
-let count = 0;
 
 const getAllUser = catchAync(async(req, res, next)=>{
     const users = await User.find().select("-password -otp -resetPasswordOtp -__v -createdAt -updatedAt");
@@ -61,15 +61,7 @@ const deleteUser = catchAync(async(req, res, next)=>{
 const updateUser = catchAync(async (req, res, next) => {
   const userId = req.params.id;
 
-  // Allowed updates ONLY
-  const allowedFields = ["email", "isActive"];
-
-  const updates = {};
-  Object.keys(req.body).forEach((key) => {
-    if (allowedFields.includes(key)) {
-      updates[key] = req.body[key];
-    }
-  });
+  const updates = filterObj(req.body, "email", "isActive");
 
   if (Object.keys(updates).length === 0) {
     return next(new AppError("No valid fields to update", 400));

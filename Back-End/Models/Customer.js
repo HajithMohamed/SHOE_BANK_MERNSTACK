@@ -22,7 +22,10 @@ const customerSchema = new mongoose.Schema(
       trim: true,
       unique: true,
     },
-
+    shopLocatedAt: {
+      type: String,
+      trim: true,
+    },
     mobileNo: {
       type: String,
       required: true,
@@ -32,6 +35,16 @@ const customerSchema = new mongoose.Schema(
     address: {
       type: String,
       required: true,
+    },
+
+    email :{
+      type : String,
+      required : true,
+      validate: [validator.isEmail, "Invalid email address"],
+    },
+
+    accountNo : {
+      type : Number,
     },
 
     // Financials
