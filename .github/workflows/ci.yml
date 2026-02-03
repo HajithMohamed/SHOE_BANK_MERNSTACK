@@ -22,10 +22,12 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: Back-End/package-lock.json
     
-    - name: Install backend dependencies
+    - name: Install dependencies
       working-directory: ./Back-End
-      run: npm install
+      run: npm ci
     
     - name: Run backend tests
       working-directory: ./Back-End
@@ -48,10 +50,12 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: Front-End/Shoe-bank-frontend/package-lock.json
     
-    - name: Install frontend dependencies
+    - name: Install dependencies
       working-directory: ./Front-End/Shoe-bank-frontend
-      run: npm install
+      run: npm ci
     
     - name: Build frontend
       working-directory: ./Front-End/Shoe-bank-frontend
