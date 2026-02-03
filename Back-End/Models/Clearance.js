@@ -20,11 +20,6 @@ const clearanceSchema = new mongoose.Schema(
       required: true,
     },
 
-    vehicleNo: {
-      type: String,
-      trim: true,
-    },
-
     accountNo: {
       type: String,
       required: true,

@@ -12,6 +12,7 @@ const imagRoutes = require("./routes/image-routes");
 const homeRoute = require("./routes/home-routes");
 const userRoutes = require("./routes/user-routes");
 const customerRoutes = require("./routes/customer-routes");
+const clearanceRoute = require("./routes/clearance-route");
 
 
 const app = express();
@@ -38,6 +39,8 @@ app.use("/api/image",imagRoutes);
 app.use("/api/home",homeRoute);
 app.use("/api/user",userRoutes);
 app.use("/api/customer",customerRoutes);
+app.use("/api/clearance",clearanceRoute);
+
 
 
 app.use(globalErrorHandler);
