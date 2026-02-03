@@ -3,122 +3,202 @@ const AppError = require("../utils/appError");
 const Customer = require("../Models/Customer");
 const filterObj = require("../utils/filter-object");
 
-const addCustomer = catchAsync(async(req, res, next)=>{
-    // Filter allowed fields only
-    const customerData = filterObj(req.body, "name", "shopName", "mobileNo", "address", "email", "accountNo");
+const getAllCustomer = catchAsync(async (req, res, next) => {
+  let query = {};
 
-    if(Object.keys(customerData).length === 0){
-        return next(new AppError("All fields are required",400));
-    }
+  if (req.query.name) {
+    query.name = { $regex: req.query.name.trim(), $options: "i" };
+  }
+  if (req.query.shopName) {
+    query.shopName = { $regex: req.query.shopName.trim(), $options: "i" };
+  }
+  if (req.query.accountNo) {
+    query.accountNo = req.query.accountNo.trim();
+  }
+  if (req.query.mobileNo) {
+    query.mobileNo = req.query.mobileNo.trim();
+  }
+  if (req.query.email) {
+    query.email = req.query.email.trim().toLowerCase();
+  }
 
-    const existCustomer = await Customer.findOne({shopName: customerData.shopName});
+  if (req.query.city) {
+    query.address = { $regex: req.query.city, $options: "i" };
+  }
 
-    if(existCustomer){
-        return next(new AppError("This customer already exist",400));
-    }
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
 
-    const newCustomer = new Customer(customerData);
+  const customers = await Customer.find(query)
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
 
-    await newCustomer.save();
+  if (customers.length === 0) {
+    return next(new AppError("No customers found", 404));
+  }
 
-    res.status(200).json({
-        success : true,
-        message : "New customer is created successfully",
-        data : newCustomer
-    });
+  res.status(200).json({
+    success: true,
+    message: "Customers fetched successfully",
+    count: customers.length,
+    data: customers,
+  });
 });
 
-const getAllCustomer = catchAsync(async(req, res, next)=>{
-    const customers = await Customer.find({});
+const getSingleCustomer = catchAsync(async (req, res, next) => {
+  const customerID = req.params.customerID;
 
-    if(!customers && customers.length==0){
-        return next(new AppError('No customers found',404));
-    }
+  if (!customerID) {
+    return next(new AppError("Customer ID is required", 400));
+  }
 
-    res.status(200).json({
-        success : true,
-        message : 'All customers are fetched successfully',
-        length : customers.length,
-        data : customers
-    });
-})
+  const customer = await Customer.findById(customerID);
 
+  if (!customer) {
+    return next(new AppError(`Customer with ID ${customerID} not found`, 404));
+  }
 
-const getSingleCustomer = catchAsync(async(req, res, next)=>{
-    const customerID = req.params.customerID;
-
-    if(!customerID){
-        return next(new AppError('Customer id is reaquired',400));
-    }
-
-    const singleCustomer = await Customer.findById(customerID);
-
-    if(!singleCustomer){
-        return next(new AppError(`The customer with ${customerID} is not found`));
-    }
-
-    res.status(200).json({
-        success : true,
-        message : 'Customer found',
-        data : singleCustomer
-    })
-})
-
-const updateCustomer = catchAsync(async(req, res, next)=>{
-    const customerID = req.params.id;
-
-    const updates = filterObj(req.body, "name", "shopName", "address", "mobileNo", "email", "accountNo");
-
-    if(Object.keys(updates).length === 0){
-        return next(new AppError('No valid fields to update', 400));
-    }
-
-    const updatedCustomer = await Customer.findByIdAndUpdate(customerID, updates, {
-        new : true,
-        runValidators : true
-    })
-
-    if (!updatedCustomer) {
-        return next(new AppError("Customer not found", 404));
-    }
-
-    res.status(200).json({
-        status: "success",
-        message: "Customer updated successfully",
-        data: { customer: updatedCustomer }
-    });
-})
-
-const deleteCustomer = catchAsync(async(req, res, next)=>{
-    const customerID = req.params.id;
-
-    const deleteCustomer = await Customer.findByIdAndDelete(customerID);
-
-    if(!deleteCustomer){
-        return next(new AppError("Customer not found", 404));   
-    }
-
-    res.status(200).json({
-    status: "success",
-    message: "Customer deleted successfully",
-    data: { customer: deleteCustomer }
+  res.status(200).json({
+    success: true,
+    message: "Customer found",
+    data: customer,
   });
-})
+});
 
-const getAllCustomerCount = catchAsync(async(req, res, next)=>{
-    const customersCount = await Customer.countDocuments();
+const addCustomer = catchAsync(async (req, res, next) => {
+  const customerData = filterObj(
+    req.body,
+    "name",
+    "shopName",
+    "mobileNo",
+    "address",
+    "email",
+    "accountNo"
+  );
 
-    res.status(200).message({
-        success : true,
-        message : 'Customer Counts',
-        data : customersCount
-    })
-})
+  if (Object.keys(customerData).length === 0) {
+    return next(new AppError("Required fields are missing", 400));
+  }
+
+  const normalizedShopName = customerData.shopName?.trim().toLowerCase();
+  const normalizedAccountNo = customerData.accountNo?.trim();
+
+  const existing = await Customer.findOne({
+    shopName: normalizedShopName,
+    accountNo: normalizedAccountNo,
+  });
+
+  if (existing) {
+    return next(new AppError("Customer with this Shop Name and Account Number already exists", 400));
+  }
+
+  if (normalizedShopName) customerData.shopName = normalizedShopName;
+  if (customerData.email) customerData.email = customerData.email.trim().toLowerCase();
+
+  const newCustomer = new Customer(customerData);
+  await newCustomer.save();
+
+  res.status(201).json({
+    success: true,
+    message: "New customer created successfully",
+    data: newCustomer,
+  });
+});
+
+const updateCustomer = catchAsync(async (req, res, next) => {
+  const customerID = req.params.id || req.params.customerID;
+
+  if (!customerID) {
+    return next(new AppError("Customer ID is required", 400));
+  }
+
+  const updates = filterObj(
+    req.body,
+    "name",
+    "shopName",
+    "address",
+    "mobileNo",
+    "email",
+    "accountNo"
+  );
+
+  if (Object.keys(updates).length === 0) {
+    return next(new AppError("No valid fields provided for update", 400));
+  }
+
+  if (updates.shopName) updates.shopName = updates.shopName.trim().toLowerCase();
+  if (updates.email) updates.email = updates.email.trim().toLowerCase();
+
+  const updatedCustomer = await Customer.findByIdAndUpdate(customerID, updates, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!updatedCustomer) {
+    return next(new AppError("Customer not found", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Customer updated successfully",
+    data: updatedCustomer,
+  });
+});
+
+const deleteCustomer = catchAsync(async (req, res, next) => {
+  const customerID = req.params.id || req.params.customerID;
+
+  if (!customerID) {
+    return next(new AppError("Customer ID is required", 400));
+  }
+
+  const deletedCustomer = await Customer.findByIdAndDelete(customerID);
+
+  if (!deletedCustomer) {
+    return next(new AppError("Customer not found", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Customer deleted successfully",
+    data: deletedCustomer,
+  });
+});
+
+const getCustomerCounts = catchAsync(async (req, res, next) => {
+  const total = await Customer.countDocuments();
+  res.status(200).json({
+    success: true,
+    message: "Customer counts",
+    data: {
+      total,
+    },
+  });
+});
+
+const getTopCustomers = catchAsync(async (req, res, next) => {
+  const limit = parseInt(req.query.limit) || 10;
+
+  const topCustomers = await Customer.aggregate([
+    { $sort: { totalPurchased: -1 } },
+    { $limit: limit },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: `Top ${limit} customers`,
+    data: topCustomers,
+  });
+});
+
 module.exports = {
-    addCustomer,
-    getAllCustomer,
-    getSingleCustomer,
-    updateCustomer,
-    deleteCustomer,
-    getAllCustomerCount,
-}
+  addCustomer,
+  getAllCustomer,
+  getSingleCustomer,
+  updateCustomer,
+  deleteCustomer,
+  getCustomerCounts,
+  getTopCustomers,
+};
