@@ -80,7 +80,6 @@ const addClearance = catchAsync(async (req, res, next) => {
     return next(new AppError("All fields are required", 400));
   }
 
-  // Normalize for duplicate check (as suggested previously)
   const normalizedName = clearanceData.name.trim().toLowerCase();
   const normalizedAccount = clearanceData.accountNo.trim();
 
