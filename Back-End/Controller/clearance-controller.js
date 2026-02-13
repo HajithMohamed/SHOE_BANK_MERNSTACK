@@ -209,7 +209,7 @@ const getTopClearances = catchAsync(async (req, res, next) => {
     { $sort: { maxPaid: -1 } },
   ];
 }
-
+i
 
   const topClearances = await Clearance.aggregate(pipeline);
 
