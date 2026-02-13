@@ -187,25 +187,29 @@ const getTopClearances = catchAsync(async (req, res, next) => {
   ];
 
   if (groupByCity) {
-    pipeline = [
-      { $match: { isActive: true } },
-      {
-        $addFields: {
-          city: {
-            $arrayElemAt: [{ $split: "$address", "," }, -1], 
-          },
+  pipeline = [
+    { $match: { isActive: true } },
+    {
+      $addFields: {
+        city: {
+          $arrayElemAt: [
+            { $split: ["$address", ", "] },
+            -1
+          ],
         },
       },
-      {
-        $group: {
-          _id: "$city",
-          topClearances: { $push: "$$ROOT" },
-          maxPaid: { $max: "$totalPaid" },
-        },
+    },
+    {
+      $group: {
+        _id: "$city",
+        topClearances: { $push: "$$ROOT" },
+        maxPaid: { $max: "$totalPaid" },
       },
-      { $sort: { maxPaid: -1 } },
-    ];
-  }
+    },
+    { $sort: { maxPaid: -1 } },
+  ];
+}
+
 
   const topClearances = await Clearance.aggregate(pipeline);
 
