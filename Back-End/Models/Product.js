@@ -1,91 +1,38 @@
-const mongoose = require("mongoose");
+inrCost: {
+  type: Number,
+  required: true
+},
 
-const productSchema = new mongoose.Schema(
-  {
-    artNo: {
-      type: String,
-      required: true,
-      trim: true
-    },
+discountPercent: {
+  type: Number,
+  required: true
+},
 
-    brand: {
-      type: String,
-      required: true,
-      trim: true
-    },
+currencyRate: {
+  type: Number, // manually entered
+  required: true
+},
 
-    category: {
-      type: String,
-      required: true,
-      enum: ["Gents", "Ladies", "Kids", "Boys", "Girls"]
-    },
+sizeFrom: {
+  type: Number,
+  required: true
+},
 
-    color: {
-      type: String,
-      required: true,
-      trim: true
-    },
+sizeTo: {
+  type: Number,
+  required: true
+},
 
-    price: {
-      type: Number,
-      required: true
-    },
+setWeightInGrams: {
+  type: Number,
+  required: true
+},
 
-    // 💰 Deals
-    discountPercent: {
-      type: Number,
-      default: 0
-    },
+clearanceCostPerKg: {
+  type: Number,
+  required: true
+},
 
-    discountPrice: {
-      type: Number
-    },
-
-    // 🏠 Home page logic
-    isFeatured: {
-      type: Boolean,
-      default: false
-    },
-
-    isOnDeal: {
-      type: Boolean,
-      default: false
-    },
-
-    // 📊 Analytics
-    soldCount: {
-      type: Number,
-      default: 0
-    },
-
-    views: {
-      type: Number,
-      default: 0
-    },
-
-    // 👟 Shoe sizes
-    sizes: {
-      type: [Number],
-      required: true
-    },
-
-    stock: {
-      type: Number,
-      required: true
-    }
-  },
-  { timestamps: true }
-);
-
-// 🔗 Virtual images
-productSchema.virtual("images", {
-  ref: "Image",
-  localField: "_id",
-  foreignField: "productId"
-});
-
-// Enable virtuals
-productSchema.set("toJSON", { virtuals: true });
-productSchema.set("toObject", { virtuals: true });
-
-module.exports = mongoose.model("Product", productSchema);
+finalWholesalePrice: {
+  type: Number
+}

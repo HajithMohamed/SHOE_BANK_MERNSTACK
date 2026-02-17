@@ -79,7 +79,7 @@ const addCustomer = catchAsync(async (req, res, next) => {
   );
 
   if (Object.keys(customerData).length === 0) {
-    return next(new AppError("Required fields are missing", 400));
+    return next(new AppErr("Required fields are missing", 400));
   }
 
   const normalizedShopName = customerData.shopName?.trim().toLowerCase();
