@@ -80,7 +80,6 @@ const addClearance = catchAsync(async (req, res, next) => {
     return next(new AppError("All fields are required", 400));
   }
 
-  // Normalize for duplicate check (as suggested previously)
   const normalizedName = clearanceData.name.trim().toLowerCase();
   const normalizedAccount = clearanceData.accountNo.trim();
 
@@ -187,25 +186,29 @@ const getTopClearances = catchAsync(async (req, res, next) => {
   ];
 
   if (groupByCity) {
-    pipeline = [
-      { $match: { isActive: true } },
-      {
-        $addFields: {
-          city: {
-            $arrayElemAt: [{ $split: "$address", "," }, -1], 
-          },
+  pipeline = [
+    { $match: { isActive: true } },
+    {
+      $addFields: {
+        city: {
+          $arrayElemAt: [
+            { $split: ["$address", ", "] },
+            -1
+          ],
         },
       },
-      {
-        $group: {
-          _id: "$city",
-          topClearances: { $push: "$$ROOT" },
-          maxPaid: { $max: "$totalPaid" },
-        },
+    },
+    {
+      $group: {
+        _id: "$city",
+        topClearances: { $push: "$$ROOT" },
+        maxPaid: { $max: "$totalPaid" },
       },
-      { $sort: { maxPaid: -1 } },
-    ];
-  }
+    },
+    { $sort: { maxPaid: -1 } },
+  ];
+}
+i
 
   const topClearances = await Clearance.aggregate(pipeline);
 

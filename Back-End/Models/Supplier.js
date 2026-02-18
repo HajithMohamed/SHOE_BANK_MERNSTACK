@@ -34,12 +34,7 @@ const supplierSchema = new mongoose.Schema(
       required: true,
     },
 
-    bankAccountNo: {
-      type: String,
-      required: true,
-    },
-
-    outstandingAmount: {
+    totalPurchasedAmount: {
       type: Number,
       default: 0,
       min: 0,

@@ -4,7 +4,6 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const globalErrorHandler = require('./Controller/errorController');
-const AppError = require('./utils/appError');
 
 const authRoutes = require('./routes/auth-routes');
 const productRoutes = require("./routes/product-routes")
@@ -13,6 +12,8 @@ const homeRoute = require("./routes/home-routes");
 const userRoutes = require("./routes/user-routes");
 const customerRoutes = require("./routes/customer-routes");
 const clearanceRoute = require("./routes/clearance-route");
+const supplierRoutes = require("./routes/supplier-routes");
+const adminRoutes = require("./routes/admin-routes")
 
 
 const app = express();
@@ -40,6 +41,8 @@ app.use("/api/home",homeRoute);
 app.use("/api/user",userRoutes);
 app.use("/api/customer",customerRoutes);
 app.use("/api/clearance",clearanceRoute);
+app.use("/api/supplier",supplierRoutes);
+app.use("/api/admin",adminRoutes);
 
 
 

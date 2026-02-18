@@ -12,8 +12,8 @@ const authMiddleware = require("../Middlewares/auth-middleware");
 const restrictedTo = require("../Middlewares/role-base-access-middleware");
 const router = express.Router();
 
-router.post("/", authMiddleware, restrictedTo("admin"), addCustomer);
-router.get("/", authMiddleware, restrictedTo("admin"), getAllCustomer);
+router.post("/add-customer", authMiddleware, restrictedTo("admin"), addCustomer);
+router.get("/get-all-customer", authMiddleware, restrictedTo("admin"), getAllCustomer);
 router.get("/count", authMiddleware, restrictedTo("admin"), getCustomerCounts);
 router.get("/top", authMiddleware, restrictedTo("admin"), getTopCustomers);
 router.get("/:id", authMiddleware, restrictedTo("admin"), getSingleCustomer);
