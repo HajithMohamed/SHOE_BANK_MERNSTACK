@@ -3,58 +3,90 @@ const validator = require("validator");
 
 const customerSchema = new mongoose.Schema(
   {
-    // Optional login linkage
+    // Optional login linkage (future online support)
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
     },
 
-    // Business identity
+    /* ===============================
+       🏪 BUSINESS INFORMATION
+    =============================== */
+
     name: {
       type: String,
       required: [true, "Customer name is required"],
       trim: true,
     },
+
     shopName: {
       type: String,
       required: [true, "Shop name is required"],
       trim: true,
-      unique: true,
     },
+
     shopLocatedAt: {
       type: String,
       trim: true,
     },
+
     mobileNo: {
       type: String,
-      required: true,
-      validate: [validator.isMobilePhone, "Invalid mobile number"],
+      required: [true, "Mobile number is required"],
+      unique: true,
+      validate: {
+        validator: function (v) {
+          return validator.isMobilePhone(v + "");
+        },
+        message: "Invalid mobile number",
+      },
     },
 
     address: {
       type: String,
-      required: true,
+      required: [true, "Address is required"],
     },
 
-    email :{
-      type : String,
-      required : true,
-      validate: [validator.isEmail, "Invalid email address"],
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      validate: {
+        validator: function (v) {
+          return v ? validator.isEmail(v) : true;
+        },
+        message: "Invalid email address",
+      },
     },
 
-    accountNo : {
-      type : Number,
+    accountNo: {
+      type: String,
     },
 
-    // Financials
+    /* ===============================
+       💰 FINANCIAL SECTION
+    =============================== */
+
     creditLimit: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    currentBalance: {
+    totalPurchased: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    totalPaid: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    totalOutstanding: {
       type: Number,
       default: 0,
       min: 0,
@@ -73,5 +105,12 @@ const customerSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+/* ===============================
+   🚀 INDEXES
+=============================== */
+
+customerSchema.index({ mobileNo: 1 });
+customerSchema.index({ shopName: 1 });
 
 module.exports = mongoose.model("Customer", customerSchema);

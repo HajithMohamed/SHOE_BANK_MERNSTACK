@@ -192,3 +192,23 @@ eexports.getAllProductsAdmin = catchAsync(async (req, res) => {
   });
 });
 
+exports.getSingleProductAdmin = catchAsync(async (req, res, next) => {
+
+  const productId = req.params.id;
+
+  const product = await Product
+    .findById(productId)
+    .select("+inrCost +currencyRate +clearanceCostPerKg")
+    .populate("images");
+
+  if (!product) {
+    return next(new AppError("Product not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "Product retrieved successfully",
+    data: product
+  });
+
+});

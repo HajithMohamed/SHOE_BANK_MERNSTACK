@@ -3,7 +3,8 @@ const {
     addProduct,
     updateProduct,
     deleteProduct,
-    getAllProductsAdmin
+    getAllProductsAdmin,
+    getSingleProductAdmin
 } = require("../Controller/admin-product-controller")
 const authMiddleware = require("../Middlewares/auth-middleware");
 const adminMiddleware = require("../Middlewares/admin-middleware")
@@ -13,5 +14,6 @@ router.post("/add-product",authMiddleware,adminMiddleware,addProduct);
 router.put("/update-product/:id",authMiddleware,adminMiddleware,updateProduct)
 router.delete("/delete-product/:id",authMiddleware,adminMiddleware,deleteProduct);
 router.get("/get-all-products",authMiddleware,adminMiddleware,getAllProductsAdmin);
+router.get("get-single-product/:id",authMiddleware,adminMiddleware,getSingleProductAdmin)
 
 module.export = router

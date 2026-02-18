@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
 
+/* ==================================================
+   🔢 PRICING & VALIDATION LOGIC
+================================================== */
+
 function calculatePricing(doc) {
   const rules = {
     Gents: { min: 6, max: 13 },
@@ -21,45 +25,50 @@ function calculatePricing(doc) {
   }
 
   /* ===============================
-     🆕 XL DETECTION LOGIC
+     🆕 XL DETECTION
+     Gents: 11–13
+     Ladies: 10–12
   =============================== */
 
-  doc.isXL = false;
-
-  if (
-    (doc.category === "Gents" &&
-      doc.sizeTo >= 11) ||
-
-    (doc.category === "Ladies" &&
-      doc.sizeTo >= 10)
-  ) {
-    doc.isXL = true;
-  }
+  doc.isXL =
+    (doc.category === "Gents" && doc.sizeTo >= 11) ||
+    (doc.category === "Ladies" && doc.sizeTo >= 10);
 
   /* ===============================
-     CONTINUE PRICING CALCULATION
+     💰 PRICING CALCULATION
   =============================== */
 
   const numberOfPairs = doc.sizeTo - doc.sizeFrom + 1;
 
-  const discountedINR =
-    doc.inrCost -
-    (doc.inrCost * doc.discountPercent) / 100;
+  if (numberOfPairs <= 0) {
+    throw new Error("Invalid size range calculation");
+  }
 
+  // Apply discount on INR cost
+  const discountedINR =
+    doc.inrCost - (doc.inrCost * doc.discountPercent) / 100;
+
+  // Currency conversion
   doc.convertedPrice = Math.round(
     discountedINR * doc.currencyRate
   );
 
+  // Weight per pair
   const weightPerPair =
     doc.setWeightInGrams / numberOfPairs;
 
-  const pairsPerKg =
-    1000 / weightPerPair;
+  if (weightPerPair <= 0) {
+    throw new Error("Invalid weight calculation");
+  }
 
+  const pairsPerKg = 1000 / weightPerPair;
+
+  // Clearance cost per pair
   doc.clearanceCost = Math.round(
     doc.clearanceCostPerKg / pairsPerKg
   );
 
+  // Final wholesale price per pair
   doc.finalWholesalePrice = Math.round(
     doc.convertedPrice +
     doc.clearanceCost +
@@ -67,6 +76,9 @@ function calculatePricing(doc) {
   );
 }
 
+/* ==================================================
+   📦 PRODUCT SCHEMA
+================================================== */
 
 const productSchema = new mongoose.Schema(
   {
@@ -95,6 +107,10 @@ const productSchema = new mongoose.Schema(
       trim: true
     },
 
+    /* ===============================
+       💰 IMPORT COSTING
+    =============================== */
+
     inrCost: {
       type: Number,
       required: true,
@@ -120,6 +136,10 @@ const productSchema = new mongoose.Schema(
       min: 0
     },
 
+    /* ===============================
+       📏 SIZE RANGE
+    =============================== */
+
     sizeFrom: {
       type: Number,
       required: true
@@ -129,6 +149,15 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
+
+    isXL: {
+      type: Boolean,
+      default: false
+    },
+
+    /* ===============================
+       ⚖️ SHIPPING
+    =============================== */
 
     setWeightInGrams: {
       type: Number,
@@ -142,10 +171,17 @@ const productSchema = new mongoose.Schema(
       min: 0
     },
 
+    /* ===============================
+       💲 CALCULATED FIELDS
+    =============================== */
+
     convertedPrice: Number,
     clearanceCost: Number,
     finalWholesalePrice: Number,
 
+    /* ===============================
+       📦 INVENTORY
+    =============================== */
 
     stock: {
       type: Number,
@@ -162,6 +198,10 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+
+    /* ===============================
+       🏷 FLAGS
+    =============================== */
 
     isFeatured: {
       type: Boolean,
@@ -181,6 +221,10 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+/* ==================================================
+   🔁 AUTO PRICE CALCULATION BEFORE SAVE
+================================================== */
+
 productSchema.pre("save", function (next) {
   try {
     calculatePricing(this);
@@ -191,7 +235,7 @@ productSchema.pre("save", function (next) {
 });
 
 /* ==================================================
-   📌 INDEXES (Performance)
+   🚀 INDEXES (PERFORMANCE)
 ================================================== */
 
 productSchema.index({ artNo: 1 });
