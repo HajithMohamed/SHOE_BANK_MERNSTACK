@@ -7,19 +7,23 @@ const Bill = require("../Models/Bill");
 const Counter = require("../Models/Counter");
 
 
-const generateInvoiceNumber = async(session)=>{
-    const generateInvoiceNumber = async (session) => {
-    const year = new Date().getFullYear();
+const generateInvoiceNumber = async (session) => {
+  const year = new Date().getFullYear();
 
-    const counter = await Counter.findOneAndUpdate(
-        { name: `invoice-${year}` },  
-        { $inc: { sequence: 1 } },
-        { new: true, upsert: true, session }
-    );
+  const counter = await Counter.findOneAndUpdate(
+    { name: `invoice-${year}` },
+    { $inc: { sequence: 1 } },
+    { new: true, upsert: true, session }
+  );
 
-    const formattedSequence = String(counter.sequence).padStart(5, "0");
+  const formattedSequence = String(counter.sequence).padStart(5, "0");
 
-    return `INV-${year}-${formattedSequence}`;
-    };
+  return `INV-${year}-${formattedSequence}`;
+};
 
-}
+const createBill = catchAsync(async(req, res, next)=>{
+    const session = await mongoose.startSession()
+    session.setTransaction();
+
+    
+})
